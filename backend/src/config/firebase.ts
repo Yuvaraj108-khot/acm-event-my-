@@ -1,39 +1,33 @@
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
+import { getApps, initializeApp, cert, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { env } from './env.js';
-import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
 
 if (getApps().length === 0) {
-  // Possible file locations for firebase-service-account.json
+  // Find the service account file
   const locations = [
-    path.resolve(process.cwd(), 'firebase-service-account.json'),        // backend/
-    path.resolve(process.cwd(), '../firebase-service-account.json'),      // repo root
-    '/etc/secrets/firebase-service-account.json',                         // Render Secret Files
+    path.resolve(process.cwd(), 'firebase-service-account.json'),
+    path.resolve(process.cwd(), '../firebase-service-account.json'),
+    '/etc/secrets/firebase-service-account.json',
   ];
 
-  let initialized = false;
-
-  // Try each file location
+  let saPath: string | null = null;
   for (const loc of locations) {
+    console.log(`🔍 Checking for service account at: ${loc} — exists: ${fs.existsSync(loc)}`);
     if (fs.existsSync(loc)) {
-      try {
-        const raw = fs.readFileSync(loc, 'utf8');
-        const sa = JSON.parse(raw);
-        initializeApp({ credential: cert(sa) });
-        console.log(`✅ Firebase Admin initialized from file: ${loc}`);
-        initialized = true;
-        break;
-      } catch (err) {
-        console.error(`❌ Failed to load service account from ${loc}:`, err);
-      }
+      saPath = loc;
+      break;
     }
   }
 
-  // Fallback: try env variable
-  if (!initialized) {
+  if (saPath) {
+    // Set GOOGLE_APPLICATION_CREDENTIALS and let the SDK handle auth natively
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = saPath;
+    initializeApp({ credential: applicationDefault() });
+    console.log(`✅ Firebase Admin initialized using GOOGLE_APPLICATION_CREDENTIALS: ${saPath}`);
+  } else {
+    // No file found — try cert() with env variable
     const envVal = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
     if (envVal) {
       try {
@@ -45,17 +39,17 @@ if (getApps().length === 0) {
         if (sa.private_key) sa.private_key = sa.private_key.replace(/\\n/g, '\n');
         initializeApp({ credential: cert(sa) });
         console.log('✅ Firebase Admin initialized from environment variable');
-        initialized = true;
       } catch (err) {
-        console.error('❌ Failed to load service account from env:', err);
+        console.error('❌ Failed to parse service account from env:', err);
+        initializeApp({ projectId: 'acm-event' });
       }
+    } else {
+      console.error('❌ NO SERVICE ACCOUNT FOUND ANYWHERE');
+      console.error('   Checked locations:', locations);
+      console.error('   Env vars FIREBASE_SERVICE_ACCOUNT_JSON:', !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+      console.error('   Env vars FIREBASE_SERVICE_ACCOUNT_BASE64:', !!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64);
+      initializeApp({ projectId: 'acm-event' });
     }
-  }
-
-  // Last resort
-  if (!initialized) {
-    console.warn('⚠️ No service account found! Using projectId only (will fail on authenticated calls)');
-    initializeApp({ projectId: env.FIREBASE_PROJECT_ID });
   }
 }
 
