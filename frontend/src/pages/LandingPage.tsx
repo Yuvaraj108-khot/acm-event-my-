@@ -85,12 +85,12 @@ function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}
+          className="flex flex-col sm:flex-row gap-3 justify-center items-center px-4"
         >
-          <Button size="lg" onClick={() => navigate(ROUTES.COMPETITIONS)} rightIcon={<ArrowRight size={18} />}>
+          <Button className="w-full sm:w-auto" size="lg" onClick={() => navigate(ROUTES.COMPETITIONS)} rightIcon={<ArrowRight size={18} />}>
             Browse Competitions
           </Button>
-          <Button size="lg" variant="secondary" onClick={() => navigate(ROUTES.LOGIN)}>
+          <Button className="w-full sm:w-auto" size="lg" variant="secondary" onClick={() => navigate(ROUTES.LOGIN)}>
             Sign In
           </Button>
         </motion.div>

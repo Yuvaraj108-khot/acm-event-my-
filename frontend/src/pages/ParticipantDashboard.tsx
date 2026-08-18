@@ -104,7 +104,7 @@ export default function ParticipantDashboard() {
           <StatCard label="Status" value="Active" icon={<Zap size={20} />} color="#f59e0b" />
         </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* My Competitions */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
