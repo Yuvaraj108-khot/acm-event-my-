@@ -10,6 +10,8 @@ import { ROUTES, COMPETITION_STATUS_LABELS, ROUND_STATUS_LABELS } from '@/consta
 import { formatDate, getRankSuffix } from '@/utils';
 import type { Competition, Round } from '@/types';
 
+import { authService } from '@/services/authService';
+
 interface StatCardProps { label: string; value: string | number; icon: React.ReactNode; color: string; }
 function StatCard({ label, value, icon, color }: StatCardProps) {
   return (
@@ -36,13 +38,22 @@ function StatCard({ label, value, icon, color }: StatCardProps) {
 }
 
 export default function ParticipantDashboard() {
-  const { user, profile } = useAuthStore();
+  const { user, profile, setUser, setProfile } = useAuthStore();
   const navigate = useNavigate();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [myRounds, setMyRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    authService.getMe()
+      .then(res => {
+        if (res.user && res.profile) {
+          setUser(res.user);
+          setProfile(res.profile);
+        }
+      })
+      .catch(() => {});
+
     Promise.all([
       competitionService.list({ status: 'published', limit: 10 }),
       competitionService.list({ status: 'active', limit: 10 }),

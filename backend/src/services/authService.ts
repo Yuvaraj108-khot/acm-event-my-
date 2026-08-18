@@ -362,6 +362,26 @@ export async function getMe(userId: string) {
   let profile = profilesSnap.empty ? null : profilesSnap.docs[0].data();
 
   if (profile) {
+    // Recalculate true total points from deduplicated round_results
+    const userResultsSnap = await db.collection('round_results')
+      .where('userId', '==', userId)
+      .get();
+    
+    const roundScores = new Map<string, number>();
+    userResultsSnap.docs.forEach((doc: any) => {
+      const data = doc.data();
+      roundScores.set(data.roundId, parseFloat(data.totalScore || '0'));
+    });
+
+    let overallPoints = 0;
+    roundScores.forEach(score => { overallPoints += score; });
+    const formattedPoints = String(overallPoints);
+
+    if (profile.totalPoints !== formattedPoints && !profilesSnap.empty) {
+      await profilesSnap.docs[0].ref.update({ totalPoints: formattedPoints, updatedAt: new Date() });
+      profile.totalPoints = formattedPoints;
+    }
+
     const allProfilesSnap = await db.collection('profiles').get();
     const profiles = allProfilesSnap.docs.map(d => d.data());
     profiles.sort((a, b) => parseFloat(b.totalPoints || '0') - parseFloat(a.totalPoints || '0'));

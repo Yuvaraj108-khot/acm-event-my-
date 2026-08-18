@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Flag, ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Clock, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { mcqService } from '@/services/mcqService';
+import { authService } from '@/services/authService';
 import { competitionService } from '@/services/competitionService';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
@@ -140,6 +141,12 @@ export default function MCQRoundPage() {
         questionsAttempted: result.questionsAttempted,
         questionsCorrect: result.questionsCorrect,
       });
+      authService.getMe().then(res => {
+        if (res.user && res.profile) {
+          useAuthStore.getState().setUser(res.user);
+          useAuthStore.getState().setProfile(res.profile);
+        }
+      }).catch(() => {});
       toast.success(`Round submitted! Score: ${result.totalScore.toFixed(2)} pts`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Submit failed');
@@ -215,7 +222,7 @@ export default function MCQRoundPage() {
                 <div>
                   <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-tertiary)' }}>Attempted</p>
                   <p style={{ margin: '4px 0 0', fontSize: 16, fontWeight: 600, color: '#f5f5f5' }}>
-                    {scoreInfo.questionsAttempted ?? 0} / {questions.length}
+                    {Math.min(scoreInfo.questionsAttempted ?? 0, questions.length)} / {questions.length}
                   </p>
                 </div>
                 <div>

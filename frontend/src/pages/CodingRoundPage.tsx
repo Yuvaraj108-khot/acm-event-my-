@@ -11,6 +11,8 @@ import { DIFFICULTY_LABELS, SUBMISSION_STATUS_LABELS, ROUTES } from '@/constants
 import { formatSeconds } from '@/utils';
 import type { CodingProblem, CodingLanguage, SubmissionResult, TestCaseResult, Round } from '@/types';
 import { mcqService } from '@/services/mcqService';
+import { authService } from '@/services/authService';
+import { useAuthStore } from '@/store/authStore';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -82,8 +84,19 @@ export default function CodingRoundPage() {
     };
   }, []);
 
+  // Code map per problem & language
+  const [userCodeMap, setUserCodeMap] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!roundId) return;
+
+    const storageKey = `coding_code_${roundId}`;
+    let savedMap: Record<string, string> = {};
+    try {
+      savedMap = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      setUserCodeMap(savedMap);
+    } catch {}
+
     Promise.all([
       codingService.getProblems(roundId),
       codingService.getLanguages(),
@@ -91,14 +104,18 @@ export default function CodingRoundPage() {
       fetch(`/api/results/round/${roundId}/me`, { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } }).then(r => r.json()).catch(() => ({ data: null })),
     ]).then(([probs, langs, roundRes, resultRes]) => {
       setProblems(probs);
-      setLanguages(langs.filter((l: CodingLanguage) => l.isEnabled));
-      if (probs.length > 0) {
-        setSelectedProblem(probs[0]);
-      }
       const enabledLangs = langs.filter((l: CodingLanguage) => l.isEnabled);
-      if (enabledLangs.length > 0) {
-        setSelectedLang(enabledLangs[0]);
-        setCode(enabledLangs[0].starterCode);
+      setLanguages(enabledLangs);
+
+      const firstProb = probs.length > 0 ? probs[0] : null;
+      const firstLang = enabledLangs.length > 0 ? enabledLangs[0] : null;
+
+      if (firstProb) setSelectedProblem(firstProb);
+      if (firstLang) setSelectedLang(firstLang);
+
+      if (firstProb && firstLang) {
+        const initialKey = `${firstProb.id}_${firstLang.id}`;
+        setCode(savedMap[initialKey] ?? firstLang.starterCode);
       }
 
       const rData = roundRes.data;
@@ -118,12 +135,53 @@ export default function CodingRoundPage() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
+  const handleCodeChange = (val: string) => {
+    setCode(val);
+    if (selectedProblem && selectedLang) {
+      const key = `${selectedProblem.id}_${selectedLang.id}`;
+      const newMap = { ...userCodeMap, [key]: val };
+      setUserCodeMap(newMap);
+      if (roundId) {
+        try {
+          localStorage.setItem(`coding_code_${roundId}`, JSON.stringify(newMap));
+        } catch {}
+      }
+    }
+  };
+
+  const handleSelectProblem = (p: CodingProblem) => {
+    if (selectedProblem?.id === p.id) return;
+    
+    // Save current code to map
+    if (selectedProblem && selectedLang) {
+      const currentKey = `${selectedProblem.id}_${selectedLang.id}`;
+      userCodeMap[currentKey] = code;
+    }
+
+    setSelectedProblem(p);
+    setResult(null);
+
+    if (selectedLang) {
+      const nextKey = `${p.id}_${selectedLang.id}`;
+      setCode(userCodeMap[nextKey] ?? selectedLang.starterCode);
+    }
+  };
+
   const handleLanguageChange = (langId: string) => {
     const lang = languages.find((l: CodingLanguage) => l.id === langId);
-    if (!lang) return;
+    if (!lang || !selectedProblem) return;
+
+    // Save current code to map
+    if (selectedLang) {
+      const currentKey = `${selectedProblem.id}_${selectedLang.id}`;
+      userCodeMap[currentKey] = code;
+    }
+
     setSelectedLang(lang);
-    setCode(lang.starterCode);
     setResult(null);
+
+    const nextKey = `${selectedProblem.id}_${lang.id}`;
+    setCode(userCodeMap[nextKey] ?? lang.starterCode);
   };
 
   const handleRun = async () => {
@@ -179,6 +237,12 @@ export default function CodingRoundPage() {
     try {
       await mcqService.submitRound(roundId);
       setSubmitted(true);
+      authService.getMe().then(res => {
+        if (res.user && res.profile) {
+          useAuthStore.getState().setUser(res.user);
+          useAuthStore.getState().setProfile(res.profile);
+        }
+      }).catch(() => {});
       toast.success('Coding round completed and submitted!');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to finish round');
@@ -253,7 +317,7 @@ export default function CodingRoundPage() {
             {problems.map((p: CodingProblem, i: number) => (
               <button
                 key={p.id}
-                onClick={() => { setSelectedProblem(p); setResult(null); }}
+                onClick={() => handleSelectProblem(p)}
                 style={{
                   padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500,
                   background: selectedProblem?.id === p.id ? 'rgba(168,85,247,0.15)' : 'transparent',
@@ -542,7 +606,7 @@ export default function CodingRoundPage() {
               height="100%"
               language={selectedLang?.monacoLanguage || 'plaintext'}
               value={code}
-              onChange={(val: string | undefined) => setCode(val || '')}
+              onChange={(val: string | undefined) => handleCodeChange(val || '')}
               theme="vs-dark"
               options={{
                 fontSize: 14,

@@ -147,15 +147,13 @@ export async function saveAnswer(params: {
     }
   }
 
-  // Find existing attempt for upsert
-  const attemptSnap = await db.collection('quiz_attempts')
-    .where('roundId', '==', roundId)
-    .where('userId', '==', userId)
-    .where('questionId', '==', questionId)
-    .limit(1)
-    .get();
+  // Find existing attempt for upsert using deterministic doc ID or query
+  const attemptDocId = `${userId}_${questionId}`;
+  const attemptRef = db.collection('quiz_attempts').doc(attemptDocId);
+  const attemptSnap = await attemptRef.get();
 
   const attemptData = {
+    id: attemptDocId,
     roundId,
     userId,
     questionId,
@@ -167,12 +165,23 @@ export async function saveAnswer(params: {
     updatedAt: new Date(),
   };
 
-  if (!attemptSnap.empty) {
-    await attemptSnap.docs[0].ref.update(attemptData);
+  if (attemptSnap.exists) {
+    await attemptRef.update(attemptData);
   } else {
-    const aRef = db.collection('quiz_attempts').doc();
-    await aRef.set({
-      id: aRef.id,
+    // Clean up any legacy non-deterministic attempt docs for this user and question
+    const legacySnap = await db.collection('quiz_attempts')
+      .where('roundId', '==', roundId)
+      .where('userId', '==', userId)
+      .where('questionId', '==', questionId)
+      .get();
+    
+    if (!legacySnap.empty) {
+      const batch = db.batch();
+      legacySnap.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    }
+
+    await attemptRef.set({
       ...attemptData,
       createdAt: new Date(),
     });
@@ -189,6 +198,12 @@ export async function submitMcqRound(roundId: string, userId: string) {
   let attempted = 0;
 
   if (round.type === 'coding') {
+    // Fetch valid problems
+    const pSnap = await db.collection('coding_problems')
+      .where('roundId', '==', roundId)
+      .get();
+    const validProblemIds = new Set(pSnap.docs.map((doc: any) => doc.id));
+
     // Fetch coding submissions
     const snap = await db.collection('coding_submissions')
       .where('roundId', '==', roundId)
@@ -196,11 +211,13 @@ export async function submitMcqRound(roundId: string, userId: string) {
       .where('isRunOnly', '==', false)
       .get();
     
-    const subs = snap.docs.map((doc: any) => doc.data());
+    const subs = snap.docs
+      .map((doc: any) => doc.data())
+      .filter((s: any) => validProblemIds.has(s.problemId));
     
     // Group by problemId to get max score per problem
     const problemScores = new Map<string, { maxScore: number; status: string }>();
-    subs.forEach(s => {
+    subs.forEach((s: any) => {
       const prev = problemScores.get(s.problemId) || { maxScore: 0, status: 'failed' };
       const scoreVal = parseFloat(s.score || '0');
       problemScores.set(s.problemId, {
@@ -217,16 +234,35 @@ export async function submitMcqRound(roundId: string, userId: string) {
       }
     });
   } else {
-    // MCQ round fetch attempts
+    // MCQ round: fetch valid questions first
+    const qSnap = await db.collection('mcq_questions')
+      .where('roundId', '==', roundId)
+      .get();
+    const validQuestionIds = new Set(qSnap.docs.map((doc: any) => doc.id));
+
+    // Fetch attempts
     const snap = await db.collection('quiz_attempts')
       .where('roundId', '==', roundId)
       .where('userId', '==', userId)
       .get();
 
     const attempts = snap.docs.map((doc: any) => doc.data());
-    attempted = attempts.filter(a => a.selectedOptionId !== null).length;
 
-    attempts.forEach(a => {
+    // Deduplicate by questionId and filter to valid questions in current round
+    const attemptMap = new Map<string, any>();
+    attempts.forEach((a: any) => {
+      if (validQuestionIds.has(a.questionId)) {
+        const existing = attemptMap.get(a.questionId);
+        // Keep the attempt with selectedOptionId or the latest update
+        if (!existing || (!existing.selectedOptionId && a.selectedOptionId)) {
+          attemptMap.set(a.questionId, a);
+        }
+      }
+    });
+
+    attempted = Array.from(attemptMap.values()).filter((a: any) => a.selectedOptionId !== null && a.selectedOptionId !== undefined).length;
+
+    attemptMap.forEach((a: any) => {
       totalScore += parseFloat(a.pointsAwarded || '0');
       if (a.isCorrect === true) {
         correct++;
@@ -236,14 +272,13 @@ export async function submitMcqRound(roundId: string, userId: string) {
 
   totalScore = Math.max(0, totalScore);
 
-  // Upsert round result
-  const resultSnap = await db.collection('round_results')
-    .where('roundId', '==', roundId)
-    .where('userId', '==', userId)
-    .limit(1)
-    .get();
+  // Upsert round result using deterministic doc ID
+  const resultDocId = `${userId}_${roundId}`;
+  const resultRef = db.collection('round_results').doc(resultDocId);
+  const resultSnap = await resultRef.get();
 
   const resultData = {
+    id: resultDocId,
     roundId,
     userId,
     competitionId: round.competitionId,
@@ -253,12 +288,22 @@ export async function submitMcqRound(roundId: string, userId: string) {
     updatedAt: new Date(),
   };
 
-  if (!resultSnap.empty) {
-    await resultSnap.docs[0].ref.update(resultData);
+  if (resultSnap.exists) {
+    await resultRef.update(resultData);
   } else {
-    const rRef = db.collection('round_results').doc();
-    await rRef.set({
-      id: rRef.id,
+    // Clean up any legacy non-deterministic round_result docs for this user and round
+    const legacySnap = await db.collection('round_results')
+      .where('roundId', '==', roundId)
+      .where('userId', '==', userId)
+      .get();
+
+    if (!legacySnap.empty) {
+      const batch = db.batch();
+      legacySnap.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    }
+
+    await resultRef.set({
       ...resultData,
       createdAt: new Date(),
     });
@@ -286,14 +331,20 @@ export async function submitMcqRound(roundId: string, userId: string) {
     await rebuildCompetitionLeaderboard(round.competitionId);
   }
 
-  // Update total points in user profile
+  // Update total points in user profile (deduplicated by roundId)
   const userResultsSnap = await db.collection('round_results')
     .where('userId', '==', userId)
     .get();
   
-  let overallPoints = 0;
+  const roundScores = new Map<string, number>();
   userResultsSnap.docs.forEach((doc: any) => {
-    overallPoints += parseFloat(doc.data().totalScore || '0');
+    const data = doc.data();
+    roundScores.set(data.roundId, parseFloat(data.totalScore || '0'));
+  });
+
+  let overallPoints = 0;
+  roundScores.forEach(score => {
+    overallPoints += score;
   });
 
   const profileSnap = await db.collection('profiles')
