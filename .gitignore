@@ -12,6 +12,11 @@ yarn-error.log*
 .env.*.local
 !.env.example
 
+# ─── Firebase Secrets ───────────────────────────────────────────────────────
+firebase-service-account.json
+**/firebase-service-account.json
+
+
 # ─── Build Outputs ──────────────────────────────────────────────────────────
 dist/
 build/
