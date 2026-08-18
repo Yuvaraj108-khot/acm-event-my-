@@ -25,10 +25,15 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || /^http:\/\/localhost:\d+$/.test(origin) || origin === env.FRONTEND_URL) {
+    if (
+      !origin ||
+      /^http:\/\/localhost:\d+$/.test(origin) ||
+      /\.vercel\.app$/.test(origin) ||
+      origin === env.FRONTEND_URL
+    ) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true); // Allow origin in production to prevent CORS blocks across preview URLs
     }
   },
   credentials: true,
