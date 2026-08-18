@@ -6,7 +6,7 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
 
   // Database
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z.string().default('firestore'),
 
   // JWT
   JWT_SECRET: z.string().min(32).default('dev-secret-change-in-production-min-32-chars'),
