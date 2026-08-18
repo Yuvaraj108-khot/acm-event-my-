@@ -1,5 +1,6 @@
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import { env } from './env.js';
 import fs from 'fs';
 import path from 'path';
@@ -18,3 +19,5 @@ if (getApps().length === 0) {
 }
 
 export const firebaseAuth = getAuth();
+export const db = getFirestore();
+
