@@ -161,6 +161,8 @@ export interface CodingProblem {
   timeLimitMs: number;
   memoryLimitMb: number;
   orderIndex: number;
+  tipDurationSeconds?: number;
+  tips?: string[];
   testCases: TestCase[];
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Plus, Edit2, Trash2, Code2, PlusCircle, Trash } from 'lucide-react';
+import { Plus, Edit2, Trash2, Code2, PlusCircle, Trash, Lightbulb } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,6 +25,8 @@ const problemFormSchema = z.object({
   points: z.string().regex(/^\d+(\.\d+)?$/, 'Points must be a valid decimal'),
   timeLimitMs: z.coerce.number().int().min(100).max(5000),
   memoryLimitMb: z.coerce.number().int().min(16).max(512),
+  tipDurationSeconds: z.coerce.number().int().min(1, 'Minimum 1 second').max(300, 'Maximum 300 seconds').default(10),
+  tips: z.array(z.object({ text: z.string().min(1, 'Tip content cannot be empty') })).optional().default([]),
   testCases: z.array(z.object({
     input: z.string(),
     expectedOutput: z.string().min(1, 'Expected output is required'),
@@ -54,6 +56,7 @@ export default function AdminCodingPage() {
     defaultValues: {
       title: '', slug: '', description: '', inputFormat: '', outputFormat: '', constraints: '',
       difficulty: 'medium', points: '10', timeLimitMs: 1000, memoryLimitMb: 128,
+      tipDurationSeconds: 10, tips: [],
       testCases: [{ input: '', expectedOutput: '', isSample: true, isHidden: false, explanation: '' }],
     },
   });
@@ -61,6 +64,11 @@ export default function AdminCodingPage() {
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'testCases',
+  });
+
+  const { fields: tipFields, append: appendTip, remove: removeTip } = useFieldArray({
+    control,
+    name: 'tips',
   });
 
   const loadProblems = () => {
@@ -88,6 +96,7 @@ export default function AdminCodingPage() {
     reset({
       title: '', slug: '', description: '', inputFormat: '', outputFormat: '', constraints: '',
       difficulty: 'medium', points: '10', timeLimitMs: 1000, memoryLimitMb: 128,
+      tipDurationSeconds: 10, tips: [],
       testCases: [{ input: '', expectedOutput: '', isSample: true, isHidden: false, explanation: '' }],
     });
     setModalOpen(true);
@@ -106,6 +115,8 @@ export default function AdminCodingPage() {
       points: p.points,
       timeLimitMs: p.timeLimitMs,
       memoryLimitMb: p.memoryLimitMb,
+      tipDurationSeconds: p.tipDurationSeconds ?? 10,
+      tips: (p.tips || []).map(t => ({ text: t })),
       testCases: p.testCases.map(tc => ({
         input: tc.input,
         expectedOutput: tc.expectedOutput,
@@ -120,8 +131,10 @@ export default function AdminCodingPage() {
   const onSubmit = async (data: ProblemFormValues) => {
     if (!roundId) return;
     try {
+      const formattedTips = (data.tips || []).map(t => t.text.trim()).filter(Boolean);
       const payload = {
         ...data,
+        tips: formattedTips,
         roundId,
         orderIndex: editingProblem ? editingProblem.orderIndex : problems.length + 1,
       };
@@ -211,6 +224,7 @@ export default function AdminCodingPage() {
                   <span>Time Limit: {p.timeLimitMs}ms</span>
                   <span>Memory Limit: {p.memoryLimitMb}MB</span>
                   <span>Test Cases: {p.testCases.length} ({p.testCases.filter(t => t.isSample).length} sample)</span>
+                  <span style={{ color: '#eab308' }}>Tips: {p.tips?.length || 0} ({p.tipDurationSeconds ?? 10}s view)</span>
                 </div>
               </div>
 
@@ -288,6 +302,15 @@ export default function AdminCodingPage() {
                 />
               </div>
 
+              <Input
+                label="Tips Visibility Duration (Seconds)"
+                type="number"
+                placeholder="10"
+                error={errors.tipDurationSeconds?.message}
+                required
+                {...register('tipDurationSeconds')}
+              />
+
               <Textarea
                 label="Problem Description (Supports Markdown)"
                 placeholder="Given an array of integers..."
@@ -320,6 +343,39 @@ export default function AdminCodingPage() {
                 required
                 {...register('constraints')}
               />
+
+              {/* Tips Section */}
+              <div style={{ borderTop: '1px solid #2a2a2a', paddingTop: 16, marginTop: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, color: '#eab308', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Lightbulb size={16} /> Problem Tips ({tipFields.length})
+                  </h4>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => appendTip({ text: '' })} leftIcon={<PlusCircle size={14} />}>
+                    Add Tip
+                  </Button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '200px', overflowY: 'auto' }}>
+                  {tipFields.length === 0 ? (
+                    <p style={{ fontSize: 12, color: 'var(--color-text-tertiary)', margin: 0 }}>No tips added yet. Click "Add Tip" to create tips for participants.</p>
+                  ) : (
+                    tipFields.map((field, index) => (
+                      <div key={field.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <Input
+                            placeholder={`Tip #${index + 1} e.g., Use Hash Map for O(N) lookup`}
+                            {...register(`tips.${index}.text` as const)}
+                            error={errors.tips?.[index]?.text?.message}
+                          />
+                        </div>
+                        <button type="button" onClick={() => removeTip(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', marginTop: 10 }}>
+                          <Trash size={14} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Right: Test Cases */}

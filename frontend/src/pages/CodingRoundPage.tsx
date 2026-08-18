@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Send, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle, Loader, Terminal, Code2 } from 'lucide-react';
+import { Play, Send, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle, Loader, Terminal, Code2, Lightbulb } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import toast from 'react-hot-toast';
 import { codingService } from '@/services/codingService';
@@ -11,7 +11,7 @@ import { DIFFICULTY_LABELS, SUBMISSION_STATUS_LABELS, ROUTES } from '@/constants
 import { formatSeconds } from '@/utils';
 import type { CodingProblem, CodingLanguage, SubmissionResult, TestCaseResult, Round } from '@/types';
 import { mcqService } from '@/services/mcqService';
-import { ConfirmDialog } from '@/components/ui/Modal';
+import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -34,6 +34,53 @@ export default function CodingRoundPage() {
   const [submitted, setSubmitted] = useState(false);
   const [round, setRound] = useState<Round | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
+
+  // Tips states
+  const [showTipsModal, setShowTipsModal] = useState(false);
+  const [tipCountdown, setTipCountdown] = useState(0);
+  const tipTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleCloseTips = () => {
+    if (tipTimerRef.current) {
+      clearInterval(tipTimerRef.current);
+      tipTimerRef.current = null;
+    }
+    setShowTipsModal(false);
+  };
+
+  const handleOpenTips = () => {
+    if (!selectedProblem) return;
+    const tipsList = selectedProblem.tips || [];
+    if (tipsList.length === 0) {
+      toast.error('No tips provided for this problem.');
+      return;
+    }
+
+    if (tipTimerRef.current) {
+      clearInterval(tipTimerRef.current);
+    }
+
+    const duration = selectedProblem.tipDurationSeconds ?? 10;
+    setTipCountdown(duration);
+    setShowTipsModal(true);
+
+    tipTimerRef.current = setInterval(() => {
+      setTipCountdown((prev) => {
+        if (prev <= 1) {
+          if (tipTimerRef.current) clearInterval(tipTimerRef.current);
+          setShowTipsModal(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (tipTimerRef.current) clearInterval(tipTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!roundId) return;
@@ -269,18 +316,33 @@ export default function CodingRoundPage() {
           <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
             {activeTab === 'description' && selectedProblem && (
               <div>
-                <div style={{ marginBottom: 16 }}>
-                  <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#f5f5f5' }}>
-                    {selectedProblem.title}
-                  </h2>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Badge variant={DIFFICULTY_LABELS[selectedProblem.difficulty]?.color?.replace('badge-', '') as 'green' | 'yellow' | 'red'}>
-                      {selectedProblem.difficulty}
-                    </Badge>
-                    <Badge variant="gray">{parseFloat(selectedProblem.points)} pts</Badge>
-                    <Badge variant="gray">Time: {selectedProblem.timeLimitMs}ms</Badge>
-                    <Badge variant="gray">Mem: {selectedProblem.memoryLimitMb}MB</Badge>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700, color: '#f5f5f5' }}>
+                      {selectedProblem.title}
+                    </h2>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <Badge variant={DIFFICULTY_LABELS[selectedProblem.difficulty]?.color?.replace('badge-', '') as 'green' | 'yellow' | 'red'}>
+                        {selectedProblem.difficulty}
+                      </Badge>
+                      <Badge variant="gray">{parseFloat(selectedProblem.points)} pts</Badge>
+                      <Badge variant="gray">Time: {selectedProblem.timeLimitMs}ms</Badge>
+                      <Badge variant="gray">Mem: {selectedProblem.memoryLimitMb}MB</Badge>
+                    </div>
                   </div>
+
+                  <Button
+                    size="sm"
+                    onClick={handleOpenTips}
+                    leftIcon={<Lightbulb size={15} color="#eab308" />}
+                    style={{
+                      background: 'rgba(234, 179, 8, 0.12)',
+                      border: '1px solid rgba(234, 179, 8, 0.3)',
+                      color: '#fef08a',
+                    }}
+                  >
+                    Tips {selectedProblem.tips && selectedProblem.tips.length > 0 ? `(${selectedProblem.tips.length})` : ''}
+                  </Button>
                 </div>
 
                 <div style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.7 }}>
@@ -509,6 +571,79 @@ export default function CodingRoundPage() {
         confirmLabel="Finish & Submit"
         loading={submittingRound}
       />
+
+      {/* Tips Modal */}
+      <Modal
+        isOpen={showTipsModal}
+        onClose={handleCloseTips}
+        title=""
+        size="md"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #2a2a2a', paddingBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Lightbulb size={20} color="#eab308" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#f5f5f5' }}>
+                  Problem Tips
+                </h3>
+                <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>
+                  {selectedProblem?.title}
+                </span>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 20, padding: '4px 12px', color: '#fca5a5',
+              fontSize: 13, fontWeight: 600
+            }}>
+              <Clock size={13} /> Visible for {tipCountdown}s
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '350px', overflowY: 'auto' }}>
+            {selectedProblem?.tips?.map((tip: string, idx: number) => (
+              <div
+                key={idx}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(234, 179, 8, 0.2)',
+                  borderRadius: 12,
+                  padding: 16,
+                  display: 'flex',
+                  gap: 12,
+                  alignItems: 'flex-start'
+                }}
+              >
+                <span style={{
+                  background: '#eab308', color: '#000', fontWeight: 700, fontSize: 12,
+                  width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', flexShrink: 0, marginTop: 2
+                }}>
+                  {idx + 1}
+                </span>
+                <p style={{ margin: 0, fontSize: 14, color: '#f3f4f6', lineHeight: 1.6 }}>
+                  {tip}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: 'center', paddingTop: 8 }}>
+            <p style={{ fontSize: 12, color: 'var(--color-text-tertiary)', margin: 0 }}>
+              This popup will automatically close in {tipCountdown} seconds.
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
