@@ -22,21 +22,29 @@ export default function LeaderboardPage() {
 
   // Fetch published/completed competitions for dropdown
   useEffect(() => {
+    setLoading(true);
     competitionService.list({ limit: 100 })
       .then(res => {
         const list = res.data.filter(c => ['active', 'completed', 'published'].includes(c.status));
         setCompetitions(list);
-        if (list.length > 0 && !competitionId) {
-          setSelectedCompId(list[0].id);
-          navigate(`/leaderboard/${list[0].id}`, { replace: true });
+        if (list.length > 0) {
+          if (!competitionId) {
+            setSelectedCompId(list[0].id);
+            navigate(`/leaderboard/${list[0].id}`, { replace: true });
+          }
+        } else {
+          setLoading(false);
         }
       })
-      .catch(() => {});
+      .catch(() => setLoading(false));
   }, [competitionId, navigate]);
 
   // Fetch leaderboard when selected competition changes
   useEffect(() => {
-    if (!selectedCompId) return;
+    if (!selectedCompId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     leaderboardService.getCompetitionLeaderboard(selectedCompId)
       .then(setLeaderboard)
