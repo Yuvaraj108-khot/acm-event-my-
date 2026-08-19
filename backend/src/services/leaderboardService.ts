@@ -21,6 +21,18 @@ export async function getCompetitionLeaderboard(competitionId: string) {
     
     const profile = profileSnap.empty ? null : profileSnap.docs[0].data();
 
+    // Fetch individual round scores for this user in this competition
+    const roundResultsSnap = await db.collection('round_results')
+      .where('competitionId', '==', competitionId)
+      .where('userId', '==', entry.userId)
+      .get();
+
+    const roundScores: Record<string, string> = {};
+    roundResultsSnap.docs.forEach((doc: any) => {
+      const res = doc.data();
+      roundScores[res.roundId] = res.totalScore;
+    });
+
     return {
       rank: entry.rank,
       userId: entry.userId,
@@ -31,6 +43,7 @@ export async function getCompetitionLeaderboard(competitionId: string) {
       usn: profile ? profile.usn : null,
       department: profile ? profile.department : null,
       email,
+      roundScores,
     };
   }));
 }

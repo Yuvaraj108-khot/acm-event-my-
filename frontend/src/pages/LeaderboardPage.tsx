@@ -8,7 +8,7 @@ import { useCompetitionStore } from '@/store/competitionStore';
 import { Badge } from '@/components/ui/Badge';
 import { Input, Select } from '@/components/ui/Input';
 import { getRankSuffix, formatDateTime } from '@/utils';
-import type { LeaderboardEntry, Competition } from '@/types';
+import type { LeaderboardEntry, Competition, Round } from '@/types';
 
 export default function LeaderboardPage() {
   const { competitionId } = useParams<{ competitionId: string }>();
@@ -17,6 +17,7 @@ export default function LeaderboardPage() {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [selectedCompId, setSelectedCompId] = useState(competitionId || '');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -39,16 +40,20 @@ export default function LeaderboardPage() {
       .catch(() => setLoading(false));
   }, [competitionId, navigate]);
 
-  // Fetch leaderboard when selected competition changes
+  // Fetch leaderboard and rounds when selected competition changes
   useEffect(() => {
     if (!selectedCompId) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    leaderboardService.getCompetitionLeaderboard(selectedCompId)
-      .then(setLeaderboard)
-      .catch(() => {})
+    Promise.all([
+      leaderboardService.getCompetitionLeaderboard(selectedCompId),
+      competitionService.getRounds(selectedCompId),
+    ]).then(([leaderboardData, roundList]) => {
+      setLeaderboard(leaderboardData);
+      setRounds(roundList.sort((a, b) => a.orderIndex - b.orderIndex));
+    }).catch(() => {})
       .finally(() => setLoading(false));
   }, [selectedCompId]);
 
@@ -152,6 +157,9 @@ export default function LeaderboardPage() {
                   <th style={{ width: 80, textAlign: 'center' }}>Rank</th>
                   <th>Participant</th>
                   <th>Department / USN</th>
+                  {rounds.map(r => (
+                    <th key={r.id} style={{ textAlign: 'center' }}>{r.title}</th>
+                  ))}
                   <th style={{ textAlign: 'center' }}>Rounds Completed</th>
                   <th style={{ textAlign: 'right' }}>Total Points</th>
                 </tr>
@@ -183,6 +191,14 @@ export default function LeaderboardPage() {
                           <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-tertiary)' }}>{entry.usn || 'N/A'}</p>
                         </div>
                       </td>
+                      {rounds.map(r => {
+                        const score = entry.roundScores?.[r.id];
+                        return (
+                          <td key={r.id} style={{ textAlign: 'center', fontWeight: score !== undefined ? 600 : 400, color: score !== undefined ? '#f5f5f5' : 'var(--color-text-muted)' }}>
+                            {score !== undefined ? parseFloat(score).toFixed(1) : '-'}
+                          </td>
+                        );
+                      })}
                       <td style={{ textAlign: 'center', fontWeight: 500 }}>
                         {entry.roundsCompleted ?? 0}
                       </td>

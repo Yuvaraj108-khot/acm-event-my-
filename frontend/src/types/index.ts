@@ -215,6 +215,7 @@ export interface LeaderboardEntry {
   department?: string;
   email: string;
   lastUpdatedAt?: string;
+  roundScores?: Record<string, string>;
 }
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
