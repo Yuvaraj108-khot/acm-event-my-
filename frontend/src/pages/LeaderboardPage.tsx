@@ -54,7 +54,7 @@ export default function LeaderboardPage() {
     return (
       entry.name?.toLowerCase().includes(query) ||
       entry.usn?.toLowerCase().includes(query) ||
-      entry.email.toLowerCase().includes(query) ||
+      entry.email?.toLowerCase().includes(query) ||
       entry.department?.toLowerCase().includes(query)
     );
   });
@@ -179,7 +179,7 @@ export default function LeaderboardPage() {
                         {entry.roundsCompleted ?? 0}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 700, color: '#a855f7', fontSize: 15 }}>
-                        {parseFloat(entry.totalScore).toFixed(1)}
+                        {parseFloat(entry.totalScore || '0').toFixed(1)}
                       </td>
                     </tr>
                   );
