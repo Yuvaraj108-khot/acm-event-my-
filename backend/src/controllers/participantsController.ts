@@ -27,3 +27,8 @@ export async function deactivateParticipant(req: Request, res: Response) {
   await participantService.deactivateParticipant(req.params.id);
   res.json(success(null, 'Participant deactivated'));
 }
+
+export async function reactivateParticipant(req: Request, res: Response) {
+  await participantService.reactivateParticipant(req.params.id);
+  res.json(success(null, 'Participant reactivated'));
+}

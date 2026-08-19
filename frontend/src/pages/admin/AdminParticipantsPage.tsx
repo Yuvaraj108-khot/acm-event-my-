@@ -17,8 +17,9 @@ export default function AdminParticipantsPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Deactivate modal states
+  // Deactivate and Reactivate modal states
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [targetUserId, setTargetUserId] = useState('');
 
   useEffect(() => {
@@ -62,15 +63,28 @@ export default function AdminParticipantsPage() {
 
   const handleDeactivate = async () => {
     try {
-      await fetch(`/api/participants/${targetUserId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-      });
+      await adminService.deactivateParticipant(targetUserId);
       toast.success('Participant account deactivated');
       setDeactivateOpen(false);
       loadParticipants();
     } catch {
       toast.error('Failed to deactivate participant');
+    }
+  };
+
+  const handleOpenReactivate = (userId: string) => {
+    setTargetUserId(userId);
+    setReactivateOpen(true);
+  };
+
+  const handleReactivate = async () => {
+    try {
+      await adminService.reactivateParticipant(targetUserId);
+      toast.success('Participant account reactivated');
+      setReactivateOpen(false);
+      loadParticipants();
+    } catch {
+      toast.error('Failed to reactivate participant');
     }
   };
 
@@ -146,10 +160,15 @@ export default function AdminParticipantsPage() {
             </thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={p.userId}>
+                <tr key={p.userId} style={{ opacity: p.isActive === false ? 0.6 : 1 }}>
                   <td>
                     <div>
-                      <span style={{ fontWeight: 600, color: '#f5f5f5' }}>{p.name || 'Profile Incomplete'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600, color: '#f5f5f5' }}>{p.name || 'Profile Incomplete'}</span>
+                        {p.isActive === false && (
+                          <Badge variant="red">Deactivated</Badge>
+                        )}
+                      </div>
                       <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--color-text-tertiary)' }}>{p.email}</p>
                     </div>
                   </td>
@@ -187,9 +206,15 @@ export default function AdminParticipantsPage() {
                         <option value="winner">Winner</option>
                       </select>
 
-                      <Button variant="ghost" size="sm" onClick={() => handleOpenDeactivate(p.userId)} style={{ padding: 8, color: '#ef4444' }} title="Deactivate account">
-                        <UserX size={15} />
-                      </Button>
+                      {p.isActive === false ? (
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenReactivate(p.userId)} style={{ padding: 8, color: '#22c55e' }} title="Reactivate account">
+                          <UserCheck size={15} />
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenDeactivate(p.userId)} style={{ padding: 8, color: '#ef4444' }} title="Deactivate account">
+                          <UserX size={15} />
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -205,9 +230,19 @@ export default function AdminParticipantsPage() {
         onClose={() => setDeactivateOpen(false)}
         onConfirm={handleDeactivate}
         title="Deactivate Participant"
-        message="Are you sure you want to deactivate this participant account? The user will be locked out and unable to log in until reactivated by database administrators. This will not delete their historical submissions."
+        message="Are you sure you want to deactivate this participant account? The user will be locked out and unable to log in until reactivated."
         confirmLabel="Deactivate Account"
         danger
+      />
+
+      {/* Reactivate confirmation */}
+      <ConfirmDialog
+        isOpen={reactivateOpen}
+        onClose={() => setReactivateOpen(false)}
+        onConfirm={handleReactivate}
+        title="Reactivate Participant"
+        message="Are you sure you want to reactivate this participant account? The user will be allowed to log in and participate in events again."
+        confirmLabel="Reactivate Account"
       />
     </div>
   );

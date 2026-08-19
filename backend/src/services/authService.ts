@@ -157,7 +157,7 @@ export async function verifyOtpAndLogin(email: string, otp: string) {
   const userData = userDoc.data();
 
   if (!userData.isActive) {
-    throw new Error('Account has been deactivated');
+    throw Object.assign(new Error('Account has been deactivated'), { statusCode: 403 });
   }
 
   // Update last login

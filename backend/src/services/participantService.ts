@@ -32,6 +32,7 @@ export async function listParticipants(params: { competitionId?: string; page: n
         phone: profileData.phone || null,
         registrationStatus: reg.status,
         registeredAt: reg.createdAt,
+        isActive: userData.isActive !== false,
       };
     }));
   }
@@ -146,4 +147,8 @@ export async function advanceParticipantsToNextRound(
 
 export async function deactivateParticipant(userId: string) {
   await db.collection('users').doc(userId).update({ isActive: false });
+}
+
+export async function reactivateParticipant(userId: string) {
+  await db.collection('users').doc(userId).update({ isActive: true });
 }

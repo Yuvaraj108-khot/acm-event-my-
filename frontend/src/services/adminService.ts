@@ -49,4 +49,14 @@ export const adminService = {
     const { data } = await api.put(`/admin/admins/${adminId}/role`, { role });
     return data.data;
   },
+
+  deactivateParticipant: async (userId: string) => {
+    const { data } = await api.delete(`/participants/${userId}`);
+    return data.data;
+  },
+
+  reactivateParticipant: async (userId: string) => {
+    const { data } = await api.post(`/participants/${userId}/reactivate`);
+    return data.data;
+  },
 };
