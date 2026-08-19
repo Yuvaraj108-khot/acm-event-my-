@@ -90,3 +90,27 @@ export function getErrorMessage(err: unknown, defaultMessage = 'An error occurre
   if (err instanceof Error) return err.message;
   return defaultMessage;
 }
+
+export function safeToInputDateTime(dateVal: any): string | null {
+  if (!dateVal) return null;
+  
+  let d: Date;
+  if (typeof dateVal === 'string') {
+    d = new Date(dateVal);
+  } else if (dateVal instanceof Date) {
+    d = dateVal;
+  } else if (typeof dateVal === 'object') {
+    // Firestore Timestamp or similar
+    const seconds = dateVal.seconds ?? dateVal._seconds;
+    if (seconds !== undefined) {
+      d = new Date(seconds * 1000);
+    } else {
+      d = new Date(dateVal);
+    }
+  } else {
+    d = new Date(dateVal);
+  }
+
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 16);
+}

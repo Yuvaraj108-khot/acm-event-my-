@@ -12,7 +12,7 @@ import { Input, Textarea, Select } from '@/components/ui/Input';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { COMPETITION_STATUS_LABELS } from '@/constants';
-import { formatDate, getErrorMessage } from '@/utils';
+import { formatDate, getErrorMessage, safeToInputDateTime } from '@/utils';
 import type { Competition } from '@/types';
 
 const compFormSchema = z.object({
@@ -87,10 +87,10 @@ export default function AdminCompetitionsPage() {
       status: comp.status,
       isPublic: comp.isPublic,
       maxParticipants: comp.maxParticipants || undefined,
-      registrationStartsAt: comp.registrationStartsAt ? new Date(comp.registrationStartsAt).toISOString().slice(0, 16) : null,
-      registrationEndsAt: comp.registrationEndsAt ? new Date(comp.registrationEndsAt).toISOString().slice(0, 16) : null,
-      startsAt: comp.startsAt ? new Date(comp.startsAt).toISOString().slice(0, 16) : null,
-      endsAt: comp.endsAt ? new Date(comp.endsAt).toISOString().slice(0, 16) : null,
+      registrationStartsAt: safeToInputDateTime(comp.registrationStartsAt),
+      registrationEndsAt: safeToInputDateTime(comp.registrationEndsAt),
+      startsAt: safeToInputDateTime(comp.startsAt),
+      endsAt: safeToInputDateTime(comp.endsAt),
     });
     setModalOpen(true);
   };

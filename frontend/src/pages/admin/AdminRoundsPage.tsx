@@ -13,7 +13,7 @@ import { Input, Textarea, Select } from '@/components/ui/Input';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { ROUND_STATUS_LABELS, ROUTES } from '@/constants';
-import { formatDuration, getErrorMessage } from '@/utils';
+import { formatDuration, getErrorMessage, safeToInputDateTime } from '@/utils';
 import type { Competition, Round } from '@/types';
 
 const roundFormSchema = z.object({
@@ -87,7 +87,7 @@ export default function AdminRoundsPage() {
       negativeMarkingValue: round.negativeMarkingValue,
       passingScore: round.passingScore || undefined,
       maxAdvancingParticipants: round.maxAdvancingParticipants || null,
-      scheduledStartAt: round.scheduledStartAt ? new Date(round.scheduledStartAt).toISOString().slice(0, 16) : null,
+      scheduledStartAt: safeToInputDateTime(round.scheduledStartAt),
     });
     setModalOpen(true);
   };
