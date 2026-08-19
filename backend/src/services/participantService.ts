@@ -12,15 +12,36 @@ export async function listParticipants(params: { competitionId?: string; page: n
     const regs = snap.docs.map((doc: any) => doc.data());
     const paginatedRegs = regs.slice(offset, offset + limit);
 
-    return Promise.all(paginatedRegs.map(async (reg: any) => {
-      const userDoc = await db.collection('users').doc(reg.userId).get();
-      const userData = userDoc.exists ? userDoc.data()! : {};
+    if (paginatedRegs.length === 0) return [];
 
+    // Batch fetch users
+    const userRefs = paginatedRegs.map((reg: any) => db.collection('users').doc(reg.userId));
+    const userDocs = await db.getAll(...userRefs);
+    const usersMap: Record<string, any> = {};
+    userDocs.forEach((doc) => {
+      if (doc.exists) {
+        usersMap[doc.id] = doc.data();
+      }
+    });
+
+    // Batch fetch profiles in chunks of 30 (Firestore "in" limit)
+    const userIds = paginatedRegs.map((reg: any) => reg.userId);
+    const profilesMap: Record<string, any> = {};
+    const chunkSize = 30;
+    for (let i = 0; i < userIds.length; i += chunkSize) {
+      const chunk = userIds.slice(i, i + chunkSize);
       const profileSnap = await db.collection('profiles')
-        .where('userId', '==', reg.userId)
-        .limit(1)
+        .where('userId', 'in', chunk)
         .get();
-      const profileData = profileSnap.empty ? {} : profileSnap.docs[0].data();
+      profileSnap.docs.forEach((doc) => {
+        const data = doc.data();
+        profilesMap[data.userId] = data;
+      });
+    }
+
+    return paginatedRegs.map((reg: any) => {
+      const userData = usersMap[reg.userId] || {};
+      const profileData = profilesMap[reg.userId] || {};
 
       return {
         userId: reg.userId,
@@ -34,7 +55,7 @@ export async function listParticipants(params: { competitionId?: string; page: n
         registeredAt: reg.createdAt,
         isActive: userData.isActive !== false,
       };
-    }));
+    });
   }
 
   const snap = await db.collection('users')
@@ -44,12 +65,25 @@ export async function listParticipants(params: { competitionId?: string; page: n
   const users = snap.docs.map((doc: any) => doc.data());
   const paginatedUsers = users.slice(offset, offset + limit);
 
-  return Promise.all(paginatedUsers.map(async (user: any) => {
+  if (paginatedUsers.length === 0) return [];
+
+  // Batch fetch profiles in chunks of 30
+  const userIds = paginatedUsers.map((user: any) => user.id);
+  const profilesMap: Record<string, any> = {};
+  const chunkSize = 30;
+  for (let i = 0; i < userIds.length; i += chunkSize) {
+    const chunk = userIds.slice(i, i + chunkSize);
     const profileSnap = await db.collection('profiles')
-      .where('userId', '==', user.id)
-      .limit(1)
+      .where('userId', 'in', chunk)
       .get();
-    const profileData = profileSnap.empty ? {} : profileSnap.docs[0].data();
+    profileSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      profilesMap[data.userId] = data;
+    });
+  }
+
+  return paginatedUsers.map((user: any) => {
+    const profileData = profilesMap[user.id] || {};
 
     return {
       userId: user.id,
@@ -61,7 +95,7 @@ export async function listParticipants(params: { competitionId?: string; page: n
       isActive: user.isActive,
       createdAt: user.createdAt,
     };
-  }));
+  });
 }
 
 export async function getParticipant(userId: string) {

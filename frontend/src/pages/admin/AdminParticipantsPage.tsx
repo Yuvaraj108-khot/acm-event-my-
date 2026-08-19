@@ -47,12 +47,17 @@ export default function AdminParticipantsPage() {
   }, [selectedCompId]);
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
+    // Optimistic state update
+    setParticipants(prev =>
+      prev.map(p => (p.userId === userId ? { ...p, registrationStatus: newStatus } : p))
+    );
     try {
       await adminService.updateParticipantStatus(userId, selectedCompId, newStatus);
       toast.success('Status updated successfully');
       loadParticipants();
     } catch {
       toast.error('Failed to update participant status');
+      loadParticipants(); // Rollback to actual backend state on error
     }
   };
 
@@ -62,13 +67,18 @@ export default function AdminParticipantsPage() {
   };
 
   const handleDeactivate = async () => {
+    // Optimistic state update
+    setParticipants(prev =>
+      prev.map(p => (p.userId === targetUserId ? { ...p, isActive: false } : p))
+    );
+    setDeactivateOpen(false);
     try {
       await adminService.deactivateParticipant(targetUserId);
       toast.success('Participant account deactivated');
-      setDeactivateOpen(false);
       loadParticipants();
     } catch {
       toast.error('Failed to deactivate participant');
+      loadParticipants(); // Rollback to actual backend state on error
     }
   };
 
@@ -78,13 +88,18 @@ export default function AdminParticipantsPage() {
   };
 
   const handleReactivate = async () => {
+    // Optimistic state update
+    setParticipants(prev =>
+      prev.map(p => (p.userId === targetUserId ? { ...p, isActive: true } : p))
+    );
+    setReactivateOpen(false);
     try {
       await adminService.reactivateParticipant(targetUserId);
       toast.success('Participant account reactivated');
-      setReactivateOpen(false);
       loadParticipants();
     } catch {
       toast.error('Failed to reactivate participant');
+      loadParticipants(); // Rollback to actual backend state on error
     }
   };
 
