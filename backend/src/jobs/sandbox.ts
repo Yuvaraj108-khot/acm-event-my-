@@ -108,10 +108,14 @@ async function runTestCase(
       resolve({ stdout, stderr, timeMs, timedOut });
     });
 
-    child.on('error', (err) => {
+    child.on('error', (err: any) => {
       clearTimeout(timer);
       const timeMs = Date.now() - startTime;
-      resolve({ stdout, stderr: err.message, timeMs, timedOut: false });
+      let errMsg = err.message;
+      if (err.code === 'ENOENT') {
+        errMsg = `Runtime command '${cmd}' is not installed or not found on the host machine.`;
+      }
+      resolve({ stdout, stderr: errMsg, timeMs, timedOut: false });
     });
   });
 }
@@ -154,14 +158,19 @@ export async function executeCode(params: {
 
     // Compile (if needed)
     if (langConfig.compile) {
+      let compilerCmd = '';
       try {
         const { cmd, args } = langConfig.compile(srcFile, compiledFile);
+        compilerCmd = cmd;
         await execFileAsync(cmd, args, {
           timeout: 30000,
           cwd: workDir,
         });
-      } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : String(err);
+      } catch (err: any) {
+        let errMsg = err instanceof Error ? err.message : String(err);
+        if (err.code === 'ENOENT') {
+          errMsg = `Compiler command '${compilerCmd}' is not installed or not found on the host machine. Please ensure Java JDK (for javac) or GCC (for gcc/g++) is installed.`;
+        }
         return {
           compilationError: errMsg,
           testResults: [],
