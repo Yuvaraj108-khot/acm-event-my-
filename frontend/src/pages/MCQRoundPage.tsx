@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge';
 import { formatSeconds, getErrorMessage } from '@/utils';
 import type { MCQQuestion, Round } from '@/types';
 import { ConfirmDialog } from '@/components/ui/Modal';
+import { api } from '@/services/api';
 
 export default function MCQRoundPage() {
   const { roundId } = useParams<{ roundId: string }>();
@@ -35,8 +36,8 @@ export default function MCQRoundPage() {
     if (!roundId) return;
     Promise.all([
       mcqService.getQuestions(roundId),
-      fetch(`/api/rounds/${roundId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } }).then(r => r.json()),
-      fetch(`/api/results/round/${roundId}/me`, { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } }).then(r => r.json()).catch(() => ({ data: null })),
+      api.get(`/rounds/${roundId}`).then(r => r.data),
+      api.get(`/results/round/${roundId}/me`).then(r => r.data).catch(() => ({ data: null })),
     ]).then(([qs, roundRes, resultRes]) => {
       setQuestions(qs);
       const initialAnswers = new Map<string, { selectedOptionId: string | null; isMarkedForReview: boolean }>();

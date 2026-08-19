@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { formatDateTime, getErrorMessage } from '@/utils';
+import { api } from '@/services/api';
 
 export default function AdminSettingsPage() {
   const { user } = useAuthStore();
@@ -49,16 +50,7 @@ export default function AdminSettingsPage() {
     setAdding(true);
     try {
       // Create user directly via admin command or API
-      const res = await fetch('/api/admin/admins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify({ email: newAdminEmail, role: newAdminRole }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to add admin');
+      await api.post('/admin/admins', { email: newAdminEmail, role: newAdminRole });
 
       toast.success('New administrator invited / added successfully!');
       setNewAdminEmail('');
@@ -172,10 +164,7 @@ export default function AdminSettingsPage() {
                 size="sm"
                 onClick={async () => {
                   toast.promise(
-                    fetch('/api/admin/rebuild-leaderboards', {
-                      method: 'POST',
-                      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-                    }),
+                    api.post('/admin/rebuild-leaderboards'),
                     {
                       loading: 'Rebuilding leaderboards...',
                       success: 'Leaderboards rebuilt successfully!',

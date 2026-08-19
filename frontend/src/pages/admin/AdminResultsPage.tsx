@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { getRankSuffix } from '@/utils';
 import type { Round, LeaderboardEntry } from '@/types';
+import { api } from '@/services/api';
 
 export default function AdminResultsPage() {
   const { roundId } = useParams<{ roundId: string }>();
@@ -34,8 +35,8 @@ export default function AdminResultsPage() {
     if (!roundId) return;
     setLoading(true);
     // Fetch round details
-    fetch(`/api/rounds/${roundId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } })
-      .then(r => r.json())
+    api.get(`/rounds/${roundId}`)
+      .then(r => r.data)
       .then(data => {
         setRound(data.data);
         // Fetch sibling rounds in competition

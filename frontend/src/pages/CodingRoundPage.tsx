@@ -18,6 +18,7 @@ import { formatSeconds, getErrorMessage } from '@/utils';
 import type { CodingProblem, CodingLanguage, SubmissionResult, TestCaseResult, Round } from '@/types';
 import { mcqService } from '@/services/mcqService';
 import { ConfirmDialog } from '@/components/ui/Modal';
+import { api } from '@/services/api';
 
 // ── Local Storage helpers ──────────────────────────────────────────────────────
 const LS_KEY = (roundId: string, problemId: string, langSlug: string) =>
@@ -111,12 +112,8 @@ export default function CodingRoundPage() {
     Promise.all([
       codingService.getProblems(roundId),
       codingService.getLanguages(),
-      fetch(`/api/rounds/${roundId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-      }).then(r => r.json()),
-      fetch(`/api/results/round/${roundId}/me`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-      }).then(r => r.json()).catch(() => ({ data: null })),
+      api.get(`/rounds/${roundId}`).then(r => r.data),
+      api.get(`/results/round/${roundId}/me`).then(r => r.data).catch(() => ({ data: null })),
     ]).then(([probs, langs, roundRes, resultRes]) => {
       const enabledLangs = langs.filter((l: CodingLanguage) => l.isEnabled);
       setProblems(probs);
