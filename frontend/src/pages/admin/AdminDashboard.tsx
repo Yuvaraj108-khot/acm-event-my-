@@ -119,8 +119,8 @@ export default function AdminDashboard() {
                       {log.userEmail || 'System'}
                     </td>
                     <td>
-                      <Badge variant={log.action.includes('delete') ? 'red' : log.action.includes('create') ? 'green' : 'blue'}>
-                        {log.action}
+                      <Badge variant={log.action?.includes('delete') ? 'red' : log.action?.includes('create') ? 'green' : 'blue'}>
+                        {log.action || 'Unknown'}
                       </Badge>
                     </td>
                     <td style={{ fontSize: 13 }}>
