@@ -38,6 +38,7 @@ export default function AdminRoundsPage() {
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -94,6 +95,7 @@ export default function AdminRoundsPage() {
 
   const onSubmit = async (data: RoundFormValues) => {
     if (!competitionId) return;
+    setSubmitting(true);
     try {
       const payload = {
         ...data,
@@ -114,6 +116,8 @@ export default function AdminRoundsPage() {
       loadData();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Save failed'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -406,8 +410,8 @@ export default function AdminRoundsPage() {
             </div>
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 12 }}>
-              <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
-              <Button type="submit">Save Round</Button>
+              <Button variant="secondary" type="button" onClick={() => setModalOpen(false)} disabled={submitting}>Cancel</Button>
+              <Button type="submit" loading={submitting}>Save Round</Button>
             </div>
           </div>
         </form>

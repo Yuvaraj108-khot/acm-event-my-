@@ -41,6 +41,7 @@ export default function AdminCompetitionsPage() {
   const [editingComp, setEditingComp] = useState<Competition | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CompFormValues>({
     resolver: zodResolver(compFormSchema),
@@ -96,6 +97,7 @@ export default function AdminCompetitionsPage() {
   };
 
   const onSubmit = async (data: CompFormValues) => {
+    setSubmitting(true);
     try {
       // Convert datetime-local values to ISO strings for the backend
       const toISO = (val: string | null | undefined): string | undefined => {
@@ -129,6 +131,8 @@ export default function AdminCompetitionsPage() {
       loadCompetitions();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Save failed'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -341,8 +345,8 @@ export default function AdminCompetitionsPage() {
             </div>
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 12 }}>
-              <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
-              <Button type="submit">Save Competition</Button>
+              <Button variant="secondary" type="button" onClick={() => setModalOpen(false)} disabled={submitting}>Cancel</Button>
+              <Button type="submit" loading={submitting}>Save Competition</Button>
             </div>
           </div>
         </form>

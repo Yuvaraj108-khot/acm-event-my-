@@ -53,6 +53,7 @@ export default function AdminCodingPage() {
   const [editingProblem, setEditingProblem] = useState<CodingProblem | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<ProblemFormValues>({
     resolver: zodResolver(problemFormSchema),
@@ -129,6 +130,7 @@ export default function AdminCodingPage() {
 
   const onSubmit = async (data: ProblemFormValues) => {
     if (!roundId) return;
+    setSubmitting(true);
     try {
       const payload = {
         ...data,
@@ -147,6 +149,8 @@ export default function AdminCodingPage() {
       loadProblems();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Save failed'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -440,8 +444,8 @@ export default function AdminCodingPage() {
           </div>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24, borderTop: '1px solid #1e1e1e', paddingTop: 16 }}>
-            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
-            <Button type="submit">Save Problem</Button>
+            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)} disabled={submitting}>Cancel</Button>
+            <Button type="submit" loading={submitting}>Save Problem</Button>
           </div>
         </form>
       </Modal>

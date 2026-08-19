@@ -40,6 +40,7 @@ export default function AdminMCQPage() {
   const [editingQuestion, setEditingQuestion] = useState<MCQQuestion | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<QuestionFormValues>({
     resolver: zodResolver(questionFormSchema),
@@ -109,6 +110,7 @@ export default function AdminMCQPage() {
       return;
     }
 
+    setSubmitting(true);
     try {
       const payload = {
         ...data,
@@ -127,6 +129,8 @@ export default function AdminMCQPage() {
       loadQuestions();
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Save failed'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -334,8 +338,8 @@ export default function AdminMCQPage() {
             </div>
 
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 12 }}>
-              <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancel</Button>
-              <Button type="submit">Save Question</Button>
+              <Button variant="secondary" type="button" onClick={() => setModalOpen(false)} disabled={submitting}>Cancel</Button>
+              <Button type="submit" loading={submitting}>Save Question</Button>
             </div>
           </div>
         </form>
