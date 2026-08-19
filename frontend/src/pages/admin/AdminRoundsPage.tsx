@@ -13,7 +13,7 @@ import { Input, Textarea, Select } from '@/components/ui/Input';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { ROUND_STATUS_LABELS, ROUTES } from '@/constants';
-import { formatDuration } from '@/utils';
+import { formatDuration, getErrorMessage } from '@/utils';
 import type { Competition, Round } from '@/types';
 
 const roundFormSchema = z.object({
@@ -113,7 +113,7 @@ export default function AdminRoundsPage() {
       setModalOpen(false);
       loadData();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Save failed');
+      toast.error(getErrorMessage(err, 'Save failed'));
     }
   };
 

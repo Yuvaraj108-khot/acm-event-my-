@@ -14,7 +14,7 @@ import { codingService } from '@/services/codingService';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { DIFFICULTY_LABELS, SUBMISSION_STATUS_LABELS, ROUTES } from '@/constants';
-import { formatSeconds } from '@/utils';
+import { formatSeconds, getErrorMessage } from '@/utils';
 import type { CodingProblem, CodingLanguage, SubmissionResult, TestCaseResult, Round } from '@/types';
 import { mcqService } from '@/services/mcqService';
 import { ConfirmDialog } from '@/components/ui/Modal';
@@ -278,7 +278,7 @@ export default function CodingRoundPage() {
       setSubmitted(true);
       toast.success('Coding round completed and submitted!');
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to finish round');
+      toast.error(getErrorMessage(err, 'Failed to finish round'));
     } finally {
       setSubmittingRound(false);
       setShowFinishConfirm(false);

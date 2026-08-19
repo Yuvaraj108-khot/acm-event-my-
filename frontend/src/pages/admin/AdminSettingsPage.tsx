@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { formatDateTime } from '@/utils';
+import { formatDateTime, getErrorMessage } from '@/utils';
 
 export default function AdminSettingsPage() {
   const { user } = useAuthStore();
@@ -64,7 +64,7 @@ export default function AdminSettingsPage() {
       setNewAdminEmail('');
       loadAdmins();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add admin');
+      toast.error(getErrorMessage(err, 'Failed to add admin'));
     } finally {
       setAdding(false);
     }

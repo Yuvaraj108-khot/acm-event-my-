@@ -12,7 +12,7 @@ import { Input, Textarea, Select } from '@/components/ui/Input';
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { COMPETITION_STATUS_LABELS } from '@/constants';
-import { formatDate } from '@/utils';
+import { formatDate, getErrorMessage } from '@/utils';
 import type { Competition } from '@/types';
 
 const compFormSchema = z.object({
@@ -128,7 +128,7 @@ export default function AdminCompetitionsPage() {
       setModalOpen(false);
       loadCompetitions();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Save failed');
+      toast.error(getErrorMessage(err, 'Save failed'));
     }
   };
 

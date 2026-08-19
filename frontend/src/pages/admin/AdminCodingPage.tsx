@@ -15,6 +15,7 @@ import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { DIFFICULTY_LABELS } from '@/constants';
 import type { CodingProblem } from '@/types';
+import { getErrorMessage } from '@/utils';
 
 const problemFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 chars').max(100),
@@ -145,7 +146,7 @@ export default function AdminCodingPage() {
       setModalOpen(false);
       loadProblems();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Save failed');
+      toast.error(getErrorMessage(err, 'Save failed'));
     }
   };
 

@@ -9,7 +9,7 @@ import { competitionService } from '@/services/competitionService';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { formatSeconds } from '@/utils';
+import { formatSeconds, getErrorMessage } from '@/utils';
 import type { MCQQuestion, Round } from '@/types';
 import { ConfirmDialog } from '@/components/ui/Modal';
 
@@ -149,7 +149,7 @@ export default function MCQRoundPage() {
       }).catch(() => {});
       toast.success(`Round submitted! Score: ${result.totalScore.toFixed(2)} pts`);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Submit failed');
+      toast.error(getErrorMessage(err, 'Submit failed'));
     } finally {
       setSubmitting(false);
       setShowConfirm(false);

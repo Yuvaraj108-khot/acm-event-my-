@@ -10,7 +10,7 @@ import { authService } from '@/services/authService';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { DEPARTMENTS } from '@/constants';
-import { getRankSuffix } from '@/utils';
+import { getRankSuffix, getErrorMessage } from '@/utils';
 
 const profileUpdateSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -59,7 +59,7 @@ export default function ProfilePage() {
       setEditing(false);
       toast.success('Profile updated successfully');
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Update failed');
+      toast.error(getErrorMessage(err, 'Update failed'));
     }
   };
 

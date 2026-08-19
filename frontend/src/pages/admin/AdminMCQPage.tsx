@@ -13,6 +13,7 @@ import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { DIFFICULTY_LABELS } from '@/constants';
 import type { MCQQuestion } from '@/types';
+import { getErrorMessage } from '@/utils';
 
 const questionFormSchema = z.object({
   questionText: z.string().min(5, 'Question must be at least 5 characters'),
@@ -125,7 +126,7 @@ export default function AdminMCQPage() {
       setModalOpen(false);
       loadQuestions();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Save failed');
+      toast.error(getErrorMessage(err, 'Save failed'));
     }
   };
 
