@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Plus, Edit2, Trash2, Code2, PlusCircle, Trash, Lightbulb } from 'lucide-react';
+import { Plus, Edit2, Trash2, Code2, PlusCircle, Trash, Eye, EyeOff, Lightbulb } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { codingService } from '@/services/codingService';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea, Select } from '@/components/ui/Input';
@@ -18,6 +20,7 @@ const problemFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 chars').max(100),
   slug: z.string().min(3).max(100).regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, and dashes only'),
   description: z.string().min(10, 'Description must be at least 10 chars'),
+  hints: z.string().optional(),
   inputFormat: z.string().min(5, 'Input format is required'),
   outputFormat: z.string().min(5, 'Output format is required'),
   constraints: z.string().min(5, 'Constraints is required'),
@@ -25,8 +28,6 @@ const problemFormSchema = z.object({
   points: z.string().regex(/^\d+(\.\d+)?$/, 'Points must be a valid decimal'),
   timeLimitMs: z.coerce.number().int().min(100).max(5000),
   memoryLimitMb: z.coerce.number().int().min(16).max(512),
-  tipDurationSeconds: z.coerce.number().int().min(1, 'Minimum 1 second').max(300, 'Maximum 300 seconds').default(10),
-  tips: z.array(z.object({ text: z.string().min(1, 'Tip content cannot be empty') })).optional().default([]),
   testCases: z.array(z.object({
     input: z.string(),
     expectedOutput: z.string().min(1, 'Expected output is required'),
@@ -44,6 +45,7 @@ export default function AdminCodingPage() {
 
   const [problems, setProblems] = useState<CodingProblem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [descPreview, setDescPreview] = useState(false);
 
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -54,21 +56,16 @@ export default function AdminCodingPage() {
   const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<ProblemFormValues>({
     resolver: zodResolver(problemFormSchema),
     defaultValues: {
-      title: '', slug: '', description: '', inputFormat: '', outputFormat: '', constraints: '',
+      title: '', slug: '', description: '', hints: '', inputFormat: '', outputFormat: '', constraints: '',
       difficulty: 'medium', points: '10', timeLimitMs: 1000, memoryLimitMb: 128,
-      tipDurationSeconds: 10, tips: [],
       testCases: [{ input: '', expectedOutput: '', isSample: true, isHidden: false, explanation: '' }],
     },
   });
 
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'testCases',
-  });
-
-  const { fields: tipFields, append: appendTip, remove: removeTip } = useFieldArray({
-    control,
-    name: 'tips',
   });
 
   const loadProblems = () => {
@@ -93,10 +90,10 @@ export default function AdminCodingPage() {
 
   const handleOpenAdd = () => {
     setEditingProblem(null);
+    setDescPreview(false);
     reset({
-      title: '', slug: '', description: '', inputFormat: '', outputFormat: '', constraints: '',
+      title: '', slug: '', description: '', hints: '', inputFormat: '', outputFormat: '', constraints: '',
       difficulty: 'medium', points: '10', timeLimitMs: 1000, memoryLimitMb: 128,
-      tipDurationSeconds: 10, tips: [],
       testCases: [{ input: '', expectedOutput: '', isSample: true, isHidden: false, explanation: '' }],
     });
     setModalOpen(true);
@@ -104,10 +101,12 @@ export default function AdminCodingPage() {
 
   const handleOpenEdit = (p: CodingProblem) => {
     setEditingProblem(p);
+    setDescPreview(false);
     reset({
       title: p.title,
       slug: p.slug,
       description: p.description,
+      hints: (p as any).hints ?? '',
       inputFormat: p.inputFormat,
       outputFormat: p.outputFormat,
       constraints: p.constraints,
@@ -115,8 +114,6 @@ export default function AdminCodingPage() {
       points: p.points,
       timeLimitMs: p.timeLimitMs,
       memoryLimitMb: p.memoryLimitMb,
-      tipDurationSeconds: p.tipDurationSeconds ?? 10,
-      tips: (p.tips || []).map(t => ({ text: t })),
       testCases: p.testCases.map(tc => ({
         input: tc.input,
         expectedOutput: tc.expectedOutput,
@@ -128,13 +125,12 @@ export default function AdminCodingPage() {
     setModalOpen(true);
   };
 
+
   const onSubmit = async (data: ProblemFormValues) => {
     if (!roundId) return;
     try {
-      const formattedTips = (data.tips || []).map(t => t.text.trim()).filter(Boolean);
       const payload = {
         ...data,
-        tips: formattedTips,
         roundId,
         orderIndex: editingProblem ? editingProblem.orderIndex : problems.length + 1,
       };
@@ -224,7 +220,6 @@ export default function AdminCodingPage() {
                   <span>Time Limit: {p.timeLimitMs}ms</span>
                   <span>Memory Limit: {p.memoryLimitMb}MB</span>
                   <span>Test Cases: {p.testCases.length} ({p.testCases.filter(t => t.isSample).length} sample)</span>
-                  <span style={{ color: '#eab308' }}>Tips: {p.tips?.length || 0} ({p.tipDurationSeconds ?? 10}s view)</span>
                 </div>
               </div>
 
@@ -302,23 +297,44 @@ export default function AdminCodingPage() {
                 />
               </div>
 
-              <Input
-                label="Tips Visibility Duration (Seconds)"
-                type="number"
-                placeholder="10"
-                error={errors.tipDurationSeconds?.message}
-                required
-                {...register('tipDurationSeconds')}
-              />
-
-              <Textarea
-                label="Problem Description (Supports Markdown)"
-                placeholder="Given an array of integers..."
-                error={errors.description?.message}
-                required
-                style={{ minHeight: 120 }}
-                {...register('description')}
-              />
+              {/* Description with live preview toggle */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                    Problem Description <span style={{ color: '#ef4444' }}>*</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginLeft: 6 }}>(Markdown)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setDescPreview(v => !v)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      background: 'none', border: '1px solid #252525', borderRadius: 6,
+                      color: 'var(--color-text-secondary)', cursor: 'pointer',
+                      fontSize: 12, padding: '3px 10px',
+                    }}
+                  >
+                    {descPreview ? <EyeOff size={12} /> : <Eye size={12} />}
+                    {descPreview ? 'Edit' : 'Preview'}
+                  </button>
+                </div>
+                {descPreview ? (
+                  <div style={{
+                    minHeight: 120, background: '#151515', border: '1px solid #2a2a2a',
+                    borderRadius: 10, padding: '12px 14px',
+                    fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.7,
+                  }}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{watch('description') || '*Nothing to preview yet...*'}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <Textarea
+                    placeholder="Given an array of integers... (Markdown supported)"
+                    error={errors.description?.message}
+                    style={{ minHeight: 120 }}
+                    {...register('description')}
+                  />
+                )}
+              </div>
 
               <Textarea
                 label="Input Format"
@@ -344,39 +360,22 @@ export default function AdminCodingPage() {
                 {...register('constraints')}
               />
 
-              {/* Tips Section */}
-              <div style={{ borderTop: '1px solid #2a2a2a', paddingTop: 16, marginTop: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 600, color: '#eab308', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Lightbulb size={16} /> Problem Tips ({tipFields.length})
-                  </h4>
-                  <Button type="button" size="sm" variant="secondary" onClick={() => appendTip({ text: '' })} leftIcon={<PlusCircle size={14} />}>
-                    Add Tip
-                  </Button>
+              {/* Hints */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <Lightbulb size={13} color="#f59e0b" />
+                  <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                    Hints <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>(optional, shown in Hints tab)</span>
+                  </label>
                 </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '200px', overflowY: 'auto' }}>
-                  {tipFields.length === 0 ? (
-                    <p style={{ fontSize: 12, color: 'var(--color-text-tertiary)', margin: 0 }}>No tips added yet. Click "Add Tip" to create tips for participants.</p>
-                  ) : (
-                    tipFields.map((field, index) => (
-                      <div key={field.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1 }}>
-                          <Input
-                            placeholder={`Tip #${index + 1} e.g., Use Hash Map for O(N) lookup`}
-                            {...register(`tips.${index}.text` as const)}
-                            error={errors.tips?.[index]?.text?.message}
-                          />
-                        </div>
-                        <button type="button" onClick={() => removeTip(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', marginTop: 10 }}>
-                          <Trash size={14} />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
+                <Textarea
+                  placeholder="Hint 1: Try sorting the array first...&#10;Hint 2: Think about using a hash map..."
+                  style={{ minHeight: 80 }}
+                  {...register('hints')}
+                />
               </div>
             </div>
+
 
             {/* Right: Test Cases */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

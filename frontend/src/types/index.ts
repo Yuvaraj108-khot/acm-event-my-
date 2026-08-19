@@ -153,6 +153,7 @@ export interface CodingProblem {
   title: string;
   slug: string;
   description: string;
+  hints?: string | null;
   inputFormat: string;
   outputFormat: string;
   constraints: string;
@@ -161,8 +162,6 @@ export interface CodingProblem {
   timeLimitMs: number;
   memoryLimitMb: number;
   orderIndex: number;
-  tipDurationSeconds?: number;
-  tips?: string[];
   testCases: TestCase[];
 }
 

@@ -33,6 +33,7 @@ export async function getProblemsForRound(roundId: string, isAdmin = false) {
       title: p.title,
       slug: p.slug,
       description: p.description,
+      hints: p.hints ?? null,
       inputFormat: p.inputFormat,
       outputFormat: p.outputFormat,
       constraints: p.constraints,
@@ -41,8 +42,6 @@ export async function getProblemsForRound(roundId: string, isAdmin = false) {
       timeLimitMs: p.timeLimitMs,
       memoryLimitMb: p.memoryLimitMb,
       orderIndex: p.orderIndex,
-      tipDurationSeconds: p.tipDurationSeconds ?? 10,
-      tips: p.tips || [],
       testCases,
     };
   });

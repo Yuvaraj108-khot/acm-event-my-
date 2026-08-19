@@ -4,6 +4,7 @@ export const createProblemSchema = z.object({
   roundId: z.string().min(1),
   title: z.string().min(3).max(200),
   description: z.string().min(10),
+  hints: z.string().optional(),
   inputFormat: z.string().min(5),
   outputFormat: z.string().min(5),
   constraints: z.string().min(5),
@@ -12,8 +13,6 @@ export const createProblemSchema = z.object({
   timeLimitMs: z.coerce.number().int().positive().max(30000).default(2000),
   memoryLimitMb: z.coerce.number().int().positive().max(1024).default(256),
   orderIndex: z.coerce.number().int().min(0).default(0),
-  tipDurationSeconds: z.coerce.number().int().min(1).max(300).default(10),
-  tips: z.array(z.string()).default([]),
   testCases: z.array(z.object({
     input: z.string(),
     expectedOutput: z.string(),

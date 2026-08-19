@@ -180,13 +180,30 @@ export default function CompetitionDetailPage() {
                           </div>
                         </div>
 
-                        {canEnter ? (
-                          <Button size="sm" rightIcon={<Play size={14} />}>Enter Round</Button>
-                        ) : round.status === 'upcoming' ? (
-                          <Lock size={16} color="var(--color-text-muted)" />
-                        ) : round.status === 'completed' ? (
-                          <CheckCircle size={16} color="#22c55e" />
-                        ) : null}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          {round.type === 'coding' ? (
+                            <Button 
+                              size="sm" 
+                              variant={canEnter ? 'primary' : 'secondary'}
+                              disabled={!canEnter}
+                              onClick={(e) => { e.stopPropagation(); if (canEnter) enterRound(round); }}
+                              rightIcon={canEnter ? <Play size={14} /> : <Lock size={14} />}
+                            >
+                              {canEnter ? 'Open IDE' : 'IDE Locked'}
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant={canEnter ? 'primary' : 'secondary'}
+                              disabled={!canEnter}
+                              onClick={(e) => { e.stopPropagation(); if (canEnter) enterRound(round); }}
+                              rightIcon={canEnter ? <Play size={14} /> : <Lock size={14} />}
+                            >
+                              {canEnter ? 'Start Quiz' : 'Quiz Locked'}
+                            </Button>
+                          )}
+                          {round.status === 'completed' && <CheckCircle size={16} color="#22c55e" />}
+                        </div>
                       </motion.div>
                     );
                   })}
