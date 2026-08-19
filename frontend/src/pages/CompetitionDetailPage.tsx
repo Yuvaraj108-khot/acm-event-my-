@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { COMPETITION_STATUS_LABELS, ROUND_STATUS_LABELS, ROUTES } from '@/constants';
-import { formatDate, formatDateTime, formatDuration, isCompetitionOpen } from '@/utils';
+import { formatDate, formatDateTime, formatDuration, isCompetitionOpen, getErrorMessage } from '@/utils';
 import type { Competition, Round } from '@/types';
 
 export default function CompetitionDetailPage() {
@@ -44,7 +44,7 @@ export default function CompetitionDetailPage() {
       setCompetition(prev => prev ? { ...prev, isRegistered: true } : prev);
       toast.success('Successfully registered!');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Registration failed';
+      const msg = getErrorMessage(err, 'Registration failed');
       toast.error(msg);
     } finally {
       setRegistering(false);

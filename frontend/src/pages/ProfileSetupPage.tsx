@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { ROUTES, DEPARTMENTS } from '@/constants';
+import { getErrorMessage } from '@/utils';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -38,7 +39,7 @@ export default function ProfileSetupPage() {
       toast.success('Profile created! Welcome to ACM Competition Platform 🎉');
       navigate(ROUTES.DASHBOARD, { replace: true });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to save profile';
+      const msg = getErrorMessage(err, 'Failed to save profile');
       toast.error(msg);
     }
   };
