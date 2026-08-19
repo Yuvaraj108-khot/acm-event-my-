@@ -138,7 +138,7 @@ export default function CodingRoundPage() {
         const saved = loadCode(roundId, firstProblem.id, firstLang.slug);
         setCode(saved ?? firstLang.starterCode);
       }
-    }).catch(() => toast.error('Failed to load problems')).finally(() => setLoading(false));
+    }).catch(err => toast.error(getErrorMessage(err, 'Failed to load problems'))).finally(() => setLoading(false));
   }, [roundId]);
 
   // ── Countdown ─────────────────────────────────────────────────────────────

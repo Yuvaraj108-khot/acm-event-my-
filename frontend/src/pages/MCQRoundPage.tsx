@@ -65,8 +65,8 @@ export default function MCQRoundPage() {
           setScoreInfo({ totalScore: parseFloat(rData.userStatus.score || '0') });
         }
       }
-    }).catch(() => {
-      toast.error('Failed to load round details');
+    }).catch(err => {
+      toast.error(getErrorMessage(err, 'Failed to load round details'));
     }).finally(() => setLoading(false));
   }, [roundId]);
 
