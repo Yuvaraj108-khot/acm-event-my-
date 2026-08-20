@@ -35,6 +35,10 @@ interface Language {
   extension: string;
 }
 
+const isWindows = process.platform === 'win32';
+const exeExtension = isWindows ? '.exe' : '';
+const pythonCmd = isWindows ? 'python' : 'python3';
+
 const LANGUAGES: Record<string, Language> = {
   c: {
     slug: 'c',
@@ -57,7 +61,7 @@ const LANGUAGES: Record<string, Language> = {
   python: {
     slug: 'python',
     extension: '.py',
-    run: (srcFile) => ({ cmd: 'python3', args: [srcFile] }),
+    run: (srcFile) => ({ cmd: pythonCmd, args: [srcFile] }),
   },
   javascript: {
     slug: 'javascript',
@@ -150,7 +154,7 @@ export async function executeCode(params: {
 
   const srcFileName = langConfig.slug === 'java' ? 'Solution.java' : `solution${langConfig.extension}`;
   const srcFile = path.join(workDir, srcFileName);
-  const compiledFile = path.join(workDir, langConfig.slug === 'java' ? 'Solution' : 'solution');
+  const compiledFile = path.join(workDir, langConfig.slug === 'java' ? 'Solution' : `solution${exeExtension}`);
 
   try {
     // Write source code
