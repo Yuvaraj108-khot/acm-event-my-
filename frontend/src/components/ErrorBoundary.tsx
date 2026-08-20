@@ -34,6 +34,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      const message = this.state.error?.toString() ?? 'Unknown error';
+      const isChunkError = message.includes('Failed to fetch dynamically imported module');
+
       return (
         <div style={{
           minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -53,7 +56,9 @@ export class ErrorBoundary extends Component<Props, State> {
               <div>
                 <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Application Error</h2>
                 <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-tertiary)' }}>
-                  Something went wrong in the rendering tree.
+                  {isChunkError
+                    ? 'A new version was deployed. Reload to fetch the latest files.'
+                    : 'Something went wrong in the rendering tree.'}
                 </p>
               </div>
             </div>

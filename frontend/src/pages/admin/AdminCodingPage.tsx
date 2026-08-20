@@ -40,6 +40,31 @@ const problemFormSchema = z.object({
 
 type ProblemFormValues = z.infer<typeof problemFormSchema>;
 
+function normalizeHintsForStorage(value?: string) {
+  if (!value) return undefined;
+
+  const lines = value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[-*]\s+|^\d+\.\s+/, ''));
+
+  if (lines.length === 0) return undefined;
+
+  return lines.map((line) => `- ${line}`).join('\n');
+}
+
+function formatHintsForEditor(value?: string | null) {
+  if (!value) return '';
+
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[-*]\s+|^\d+\.\s+/, ''))
+    .join('\n');
+}
+
 export default function AdminCodingPage() {
   const { roundId } = useParams<{ roundId: string }>();
   const navigate = useNavigate();
@@ -108,7 +133,7 @@ export default function AdminCodingPage() {
       title: p.title,
       slug: p.slug,
       description: p.description,
-      hints: (p as any).hints ?? '',
+      hints: formatHintsForEditor((p as any).hints),
       inputFormat: p.inputFormat,
       outputFormat: p.outputFormat,
       constraints: p.constraints,
@@ -134,6 +159,7 @@ export default function AdminCodingPage() {
     try {
       const payload = {
         ...data,
+        hints: normalizeHintsForStorage(data.hints),
         roundId,
         orderIndex: editingProblem ? editingProblem.orderIndex : problems.length + 1,
       };
@@ -374,7 +400,8 @@ export default function AdminCodingPage() {
                   </label>
                 </div>
                 <Textarea
-                  placeholder="Hint 1: Try sorting the array first...&#10;Hint 2: Think about using a hash map..."
+                  placeholder={'Use two pointers...\nTrack min and max in the current window...\nWatch out for duplicate values...'}
+                  hint="Add one hint per line. We'll format them as separate hints automatically."
                   style={{ minHeight: 80 }}
                   {...register('hints')}
                 />

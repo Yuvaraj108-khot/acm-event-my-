@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, useRef, useCallback } from 'react';
+import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -16,9 +16,10 @@ import type { CodingProblem, CodingLanguage, SubmissionResult, TestCaseResult, R
 import { mcqService } from '@/services/mcqService';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { api } from '@/services/api';
+import { lazyWithRetry } from '@/utils/lazyWithRetry';
 
-const CodeEditor = lazy(() => import('@/components/coding/CodeEditor').then((module) => ({ default: module.CodeEditor })));
-const MarkdownContent = lazy(() => import('@/components/coding/MarkdownContent').then((module) => ({ default: module.MarkdownContent })));
+const CodeEditor = lazyWithRetry(() => import('@/components/coding/CodeEditor').then((module) => ({ default: module.CodeEditor })));
+const MarkdownContent = lazyWithRetry(() => import('@/components/coding/MarkdownContent').then((module) => ({ default: module.MarkdownContent })));
 
 // ── Local Storage helpers ──────────────────────────────────────────────────────
 const LS_KEY = (roundId: string, problemId: string, langSlug: string) =>

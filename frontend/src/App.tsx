@@ -1,31 +1,32 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { Navbar } from '@/components/layout/Navbar';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { ROUTES } from '@/constants';
+import { lazyWithRetry } from '@/utils/lazyWithRetry';
 
 // ── Lazy-loaded pages ─────────────────────────────────────────────────────────
-const LandingPage = lazy(() => import('@/pages/LandingPage'));
-const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const ProfileSetupPage = lazy(() => import('@/pages/ProfileSetupPage'));
-const ParticipantDashboard = lazy(() => import('@/pages/ParticipantDashboard'));
-const CompetitionsPage = lazy(() => import('@/pages/CompetitionsPage'));
-const CompetitionDetailPage = lazy(() => import('@/pages/CompetitionDetailPage'));
-const MCQRoundPage = lazy(() => import('@/pages/MCQRoundPage'));
-const CodingRoundPage = lazy(() => import('@/pages/CodingRoundPage'));
-const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage'));
-const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const LandingPage = lazyWithRetry(() => import('@/pages/LandingPage'));
+const LoginPage = lazyWithRetry(() => import('@/pages/LoginPage'));
+const ProfileSetupPage = lazyWithRetry(() => import('@/pages/ProfileSetupPage'));
+const ParticipantDashboard = lazyWithRetry(() => import('@/pages/ParticipantDashboard'));
+const CompetitionsPage = lazyWithRetry(() => import('@/pages/CompetitionsPage'));
+const CompetitionDetailPage = lazyWithRetry(() => import('@/pages/CompetitionDetailPage'));
+const MCQRoundPage = lazyWithRetry(() => import('@/pages/MCQRoundPage'));
+const CodingRoundPage = lazyWithRetry(() => import('@/pages/CodingRoundPage'));
+const LeaderboardPage = lazyWithRetry(() => import('@/pages/LeaderboardPage'));
+const ProfilePage = lazyWithRetry(() => import('@/pages/ProfilePage'));
 
 // Admin pages
-const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
-const AdminCompetitionsPage = lazy(() => import('@/pages/admin/AdminCompetitionsPage'));
-const AdminRoundsPage = lazy(() => import('@/pages/admin/AdminRoundsPage'));
-const AdminMCQPage = lazy(() => import('@/pages/admin/AdminMCQPage'));
-const AdminCodingPage = lazy(() => import('@/pages/admin/AdminCodingPage'));
-const AdminParticipantsPage = lazy(() => import('@/pages/admin/AdminParticipantsPage'));
-const AdminResultsPage = lazy(() => import('@/pages/admin/AdminResultsPage'));
-const AdminSettingsPage = lazy(() => import('@/pages/admin/AdminSettingsPage'));
+const AdminDashboard = lazyWithRetry(() => import('@/pages/admin/AdminDashboard'));
+const AdminCompetitionsPage = lazyWithRetry(() => import('@/pages/admin/AdminCompetitionsPage'));
+const AdminRoundsPage = lazyWithRetry(() => import('@/pages/admin/AdminRoundsPage'));
+const AdminMCQPage = lazyWithRetry(() => import('@/pages/admin/AdminMCQPage'));
+const AdminCodingPage = lazyWithRetry(() => import('@/pages/admin/AdminCodingPage'));
+const AdminParticipantsPage = lazyWithRetry(() => import('@/pages/admin/AdminParticipantsPage'));
+const AdminResultsPage = lazyWithRetry(() => import('@/pages/admin/AdminResultsPage'));
+const AdminSettingsPage = lazyWithRetry(() => import('@/pages/admin/AdminSettingsPage'));
 
 // ── Loading fallback ──────────────────────────────────────────────────────────
 function PageLoader() {
