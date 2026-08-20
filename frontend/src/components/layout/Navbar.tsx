@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/authService';
 import { ROUTES } from '@/constants';
 import { Button } from '@/components/ui/Button';
+import logo from '@/assets/logo.png';
 
 const navLinks = [
   { label: 'Dashboard', href: ROUTES.DASHBOARD, icon: BarChart3 },
@@ -47,11 +48,15 @@ export function Navbar() {
         {/* Logo */}
         <Link to={ROUTES.HOME} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
           <div style={{
-            width: 34, height: 34, borderRadius: 8,
-            background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: 36,
+            padding: '2px 8px',
+            backgroundColor: '#ffffff',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
-            <Zap size={18} color="white" fill="white" />
+            <img src={logo} alt="ACM Logo" style={{ height: 28, objectFit: 'contain' }} />
           </div>
           <div>
             <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f5f5', letterSpacing: '-0.3px' }}>ACM</span>

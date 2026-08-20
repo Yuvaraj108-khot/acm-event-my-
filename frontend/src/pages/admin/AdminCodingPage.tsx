@@ -40,30 +40,41 @@ const problemFormSchema = z.object({
 
 type ProblemFormValues = z.infer<typeof problemFormSchema>;
 
-function normalizeHintsForStorage(value?: string) {
-  if (!value) return undefined;
-
-  const lines = value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => line.replace(/^[-*]\s+|^\d+\.\s+/, ''));
-
-  if (lines.length === 0) return undefined;
-
-  return lines.map((line) => `- ${line}`).join('\n');
+interface HintItem {
+  text: string;
+  delaySeconds: number;
 }
 
-function formatHintsForEditor(value?: string | null) {
-  if (!value) return '';
-
-  return value
+function parseHints(markdown?: string | null): HintItem[] {
+  if (!markdown) return [];
+  return markdown
     .split(/\r?\n/)
-    .map((line) => line.trim())
+    .map(line => line.trim())
     .filter(Boolean)
-    .map((line) => line.replace(/^[-*]\s+|^\d+\.\s+/, ''))
+    .map(line => {
+      const cleaned = line.replace(/^[-*]\s+|^\d+\.\s+/, '').trim();
+      const match = cleaned.match(/^\[(\d+)\]\s*(.*)$/);
+      if (match) {
+        return {
+          delaySeconds: parseInt(match[1], 10),
+          text: match[2].trim(),
+        };
+      }
+      return {
+        delaySeconds: 0,
+        text: cleaned,
+      };
+    });
+}
+
+function serializeHints(items: HintItem[]): string {
+  if (!items || items.length === 0) return '';
+  return items
+    .filter(item => item.text.trim())
+    .map(item => `- [${item.delaySeconds || 0}] ${item.text.trim()}`)
     .join('\n');
 }
+
 
 export default function AdminCodingPage() {
   const { roundId } = useParams<{ roundId: string }>();
@@ -72,6 +83,8 @@ export default function AdminCodingPage() {
   const [problems, setProblems] = useState<CodingProblem[]>([]);
   const [loading, setLoading] = useState(true);
   const [descPreview, setDescPreview] = useState(false);
+  const [hintList, setHintList] = useState<HintItem[]>([]);
+
 
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -118,6 +131,7 @@ export default function AdminCodingPage() {
   const handleOpenAdd = () => {
     setEditingProblem(null);
     setDescPreview(false);
+    setHintList([]);
     reset({
       title: '', slug: '', description: '', hints: '', inputFormat: '', outputFormat: '', constraints: '',
       difficulty: 'medium', points: '10', timeLimitMs: 1000, memoryLimitMb: 128,
@@ -129,11 +143,12 @@ export default function AdminCodingPage() {
   const handleOpenEdit = (p: CodingProblem) => {
     setEditingProblem(p);
     setDescPreview(false);
+    setHintList(parseHints(p.hints));
     reset({
       title: p.title,
       slug: p.slug,
       description: p.description,
-      hints: formatHintsForEditor((p as any).hints),
+      hints: p.hints || '',
       inputFormat: p.inputFormat,
       outputFormat: p.outputFormat,
       constraints: p.constraints,
@@ -159,7 +174,7 @@ export default function AdminCodingPage() {
     try {
       const payload = {
         ...data,
-        hints: normalizeHintsForStorage(data.hints),
+        hints: serializeHints(hintList),
         roundId,
         orderIndex: editingProblem ? editingProblem.orderIndex : problems.length + 1,
       };
@@ -392,19 +407,77 @@ export default function AdminCodingPage() {
               />
 
               {/* Hints */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <Lightbulb size={13} color="#f59e0b" />
-                  <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                    Hints <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>(optional, shown in Hints tab)</span>
-                  </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Lightbulb size={13} color="#f59e0b" />
+                    <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+                      Hints <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>(optional, shown in Hints tab)</span>
+                    </label>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setHintList([...hintList, { text: '', delaySeconds: 0 }])}
+                    leftIcon={<Plus size={12} />}
+                  >
+                    Add Hint
+                  </Button>
                 </div>
-                <Textarea
-                  placeholder={'Use two pointers...\nTrack min and max in the current window...\nWatch out for duplicate values...'}
-                  hint="Add one hint per line. We'll format them as separate hints automatically."
-                  style={{ minHeight: 80 }}
-                  {...register('hints')}
-                />
+
+                {hintList.length === 0 ? (
+                  <p style={{ margin: '8px 0', fontSize: 13, color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                    No hints added yet. Click "Add Hint" to add one.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+                    {hintList.map((hint, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <Textarea
+                            placeholder={`Hint #${idx + 1} text...`}
+                            value={hint.text}
+                            onChange={(e) => {
+                              const newList = [...hintList];
+                              newList[idx].text = e.target.value;
+                              setHintList(newList);
+                            }}
+                            style={{ minHeight: 48, padding: '8px 12px' }}
+                          />
+                        </div>
+                        <div style={{ width: 120 }}>
+                          <Input
+                            type="number"
+                            placeholder="Delay (sec)"
+                            value={hint.delaySeconds === 0 ? '' : hint.delaySeconds}
+                            onChange={(e) => {
+                              const newList = [...hintList];
+                              newList[idx].delaySeconds = parseInt(e.target.value, 10) || 0;
+                              setHintList(newList);
+                            }}
+                            hint="Unlock delay (sec)"
+                            style={{ padding: '8px 12px' }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setHintList(hintList.filter((_, i) => i !== idx))}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#ef4444',
+                            marginTop: 12,
+                            padding: 4,
+                          }}
+                        >
+                          <Trash size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

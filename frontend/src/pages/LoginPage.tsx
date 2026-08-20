@@ -14,6 +14,7 @@ import { ROUTES } from '@/constants';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '@/config/firebase';
 import { getErrorMessage } from '@/utils';
+import logo from '@/assets/logo.png';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" style={{ marginRight: 10 }}>
@@ -116,12 +117,17 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 30px rgba(168,85,247,0.3)',
+            width: 140,
+            margin: '0 auto 16px',
+            padding: '8px 16px',
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
           }}>
-            <Zap size={28} color="white" fill="white" />
+            <img src={logo} alt="ACM Logo" style={{ height: 48, objectFit: 'contain' }} />
           </div>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: '#f5f5f5', letterSpacing: '-0.5px' }}>
             ACM NMAMIT

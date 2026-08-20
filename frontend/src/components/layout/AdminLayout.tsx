@@ -7,6 +7,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/authService';
 import { ROUTES } from '@/constants';
+import logo from '@/assets/logo.png';
 
 const adminNavItems = [
   { label: 'Dashboard', href: ROUTES.ADMIN, icon: LayoutDashboard, exact: true },
@@ -49,11 +50,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div style={{ padding: '20px 20px', borderBottom: '1px solid #1e1e1e' }}>
           <Link to={ROUTES.HOME} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <div style={{
-              width: 30, height: 30, borderRadius: 7,
-              background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              height: 32,
+              padding: '2px 8px',
+              backgroundColor: '#ffffff',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}>
-              <Zap size={16} color="white" fill="white" />
+              <img src={logo} alt="ACM Logo" style={{ height: 24, objectFit: 'contain' }} />
             </div>
             <span style={{ fontSize: 14, fontWeight: 700, color: '#f5f5f5' }}>ACM Admin</span>
           </Link>

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ROUTES, COMPETITION_STATUS_LABELS } from '@/constants';
 import { formatDate, isCompetitionOpen } from '@/utils';
 import type { Competition } from '@/types';
+import logo from '@/assets/logo.png';
 
 // ── Hero Section ──────────────────────────────────────────────────────────────
 function HeroSection() {
@@ -316,11 +317,15 @@ function Footer() {
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
           <div style={{
-            width: 30, height: 30, borderRadius: 7,
-            background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: 32,
+            padding: '2px 8px',
+            backgroundColor: '#ffffff',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
-            <Zap size={16} color="white" fill="white" />
+            <img src={logo} alt="ACM Logo" style={{ height: 24, objectFit: 'contain' }} />
           </div>
           <span style={{ fontSize: 16, fontWeight: 700, color: '#f5f5f5' }}>ACM NMAMIT</span>
         </div>

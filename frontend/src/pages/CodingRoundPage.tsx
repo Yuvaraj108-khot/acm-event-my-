@@ -21,6 +21,43 @@ import { lazyWithRetry } from '@/utils/lazyWithRetry';
 const CodeEditor = lazyWithRetry(() => import('@/components/coding/CodeEditor').then((module) => ({ default: module.CodeEditor })));
 const MarkdownContent = lazyWithRetry(() => import('@/components/coding/MarkdownContent').then((module) => ({ default: module.MarkdownContent })));
 
+interface HintItem {
+  text: string;
+  delaySeconds: number;
+}
+
+function parseHints(markdown?: string | null): HintItem[] {
+  if (!markdown) return [];
+  return markdown
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const cleaned = line.replace(/^[-*]\s+|^\d+\.\s+/, '').trim();
+      const match = cleaned.match(/^\[(\d+)\]\s*(.*)$/);
+      if (match) {
+        return {
+          delaySeconds: parseInt(match[1], 10),
+          text: match[2].trim(),
+        };
+      }
+      return {
+        delaySeconds: 0,
+        text: cleaned,
+      };
+    });
+}
+
+function formatDelayTime(seconds: number): string {
+  if (seconds <= 0) return '0s';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m > 0) {
+    return `${m}m ${s}s`;
+  }
+  return `${seconds}s`;
+}
+
 // ── Local Storage helpers ──────────────────────────────────────────────────────
 const LS_KEY = (roundId: string, problemId: string, langSlug: string) =>
   `acm_code_${roundId}_${problemId}_${langSlug}`;
@@ -530,13 +567,49 @@ export default function CodingRoundPage() {
                     <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#f5f5f5' }}>Hints & Strategy</h3>
                   </div>
 
-                  {(selectedProblem as any).hints ? (
-                    <div style={{ fontSize: 14.5, color: 'var(--color-text-secondary)', lineHeight: 1.8 }}>
-                      <Suspense fallback={<p style={{ margin: 0, color: 'var(--color-text-muted)' }}>Loading hints...</p>}>
-                        <MarkdownContent>{(selectedProblem as any).hints}</MarkdownContent>
-                      </Suspense>
-                    </div>
-                  ) : (
+                  {(selectedProblem as any).hints ? (() => {
+                    const hintItems = parseHints((selectedProblem as any).hints);
+                    const elapsedSeconds = round?.durationMinutes ? (round.durationMinutes * 60) - timeLeft : 0;
+                    
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {hintItems.map((hint, idx) => {
+                          const isUnlocked = round?.status === 'completed' || elapsedSeconds >= hint.delaySeconds;
+                          
+                          if (isUnlocked) {
+                            return (
+                              <div key={idx} className="glass" style={{ borderRadius: 10, padding: '14px 18px', borderLeft: '3px solid #f59e0b', background: 'rgba(245,158,11,0.02)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                                  <Lightbulb size={14} color="#f59e0b" />
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b' }}>Hint #{idx + 1}</span>
+                                </div>
+                                <div style={{ fontSize: 14.5, color: 'var(--color-text-secondary)', lineHeight: 1.7 }}>
+                                  <Suspense fallback={<p style={{ margin: 0, color: 'var(--color-text-muted)' }}>Loading hint...</p>}>
+                                    <MarkdownContent>{hint.text}</MarkdownContent>
+                                  </Suspense>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            const secsLeft = hint.delaySeconds - elapsedSeconds;
+                            return (
+                              <div key={idx} className="glass" style={{ borderRadius: 10, padding: '14px 18px', borderLeft: '3px solid #333', background: 'rgba(255,255,255,0.01)', opacity: 0.85 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ fontSize: 14 }}>🔒</span>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)' }}>Hint #{idx + 1} (Locked)</span>
+                                  </div>
+                                  <span style={{ fontSize: 12, color: '#a855f7', fontWeight: 600, background: 'rgba(168,85,247,0.1)', padding: '3px 10px', borderRadius: 6 }}>
+                                    Unlocks in {formatDelayTime(secsLeft)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
+                        })}
+                      </div>
+                    );
+                  })() : (
                     <>
                       {/* Auto-generated approach hints from problem data */}
                       <HintCard number={1} title="Read the problem carefully">
