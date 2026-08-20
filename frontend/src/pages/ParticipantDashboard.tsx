@@ -54,12 +54,18 @@ export default function ParticipantDashboard() {
       })
       .catch(() => {});
 
-    Promise.all([
-      competitionService.list({ status: 'published', limit: 10 }),
-      competitionService.list({ status: 'active', limit: 10 }),
-    ]).then(([published, active]) => {
-      setCompetitions([...active.data, ...published.data]);
-    }).catch(() => {}).finally(() => setLoading(false));
+    competitionService.list({ limit: 20 })
+      .then((result) => {
+        const visibleCompetitions = result.data.filter((competition) =>
+          competition.status === 'active' || competition.status === 'published'
+        );
+        const uniqueCompetitions = Array.from(
+          new Map(visibleCompetitions.map((competition) => [competition.id, competition])).values()
+        );
+        setCompetitions(uniqueCompetitions);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const greeting = () => {

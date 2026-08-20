@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { Suspense, lazy, useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -6,10 +6,7 @@ import {
   ChevronUp, ChevronDown, Lightbulb, History, BookOpen, FlaskConical,
   RotateCcw, Maximize2, Minimize2, AlignLeft,
 } from 'lucide-react';
-import Editor from '@monaco-editor/react';
 import toast from 'react-hot-toast';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { codingService } from '@/services/codingService';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -19,6 +16,9 @@ import type { CodingProblem, CodingLanguage, SubmissionResult, TestCaseResult, R
 import { mcqService } from '@/services/mcqService';
 import { ConfirmDialog } from '@/components/ui/Modal';
 import { api } from '@/services/api';
+
+const CodeEditor = lazy(() => import('@/components/coding/CodeEditor').then((module) => ({ default: module.CodeEditor })));
+const MarkdownContent = lazy(() => import('@/components/coding/MarkdownContent').then((module) => ({ default: module.MarkdownContent })));
 
 // ── Local Storage helpers ──────────────────────────────────────────────────────
 const LS_KEY = (roundId: string, problemId: string, langSlug: string) =>
@@ -461,7 +461,9 @@ export default function CodingRoundPage() {
                   }}
                     className="prose"
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedProblem.description}</ReactMarkdown>
+                    <Suspense fallback={<p style={{ margin: 0, color: 'var(--color-text-muted)' }}>Loading description...</p>}>
+                      <MarkdownContent>{selectedProblem.description}</MarkdownContent>
+                    </Suspense>
                   </div>
 
                   {/* Input format */}
@@ -529,7 +531,9 @@ export default function CodingRoundPage() {
 
                   {(selectedProblem as any).hints ? (
                     <div style={{ fontSize: 14.5, color: 'var(--color-text-secondary)', lineHeight: 1.8 }}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{(selectedProblem as any).hints}</ReactMarkdown>
+                      <Suspense fallback={<p style={{ margin: 0, color: 'var(--color-text-muted)' }}>Loading hints...</p>}>
+                        <MarkdownContent>{(selectedProblem as any).hints}</MarkdownContent>
+                      </Suspense>
                     </div>
                   ) : (
                     <>
@@ -688,31 +692,19 @@ export default function CodingRoundPage() {
 
           {/* Monaco Editor */}
           <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-            <Editor
-              height="100%"
-              language={selectedLang?.monacoLanguage ?? 'plaintext'}
-              value={code}
-              onChange={handleCodeChange}
-              theme="vs-dark"
-              options={{
-                fontSize: 14,
-                fontFamily: 'JetBrains Mono, Fira Code, Consolas, monospace',
-                fontLigatures: true,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                wordWrap: 'on',
-                automaticLayout: true,
-                lineNumbersMinChars: 3,
-                padding: { top: 14, bottom: 14 },
-                tabSize: 4,
-                insertSpaces: true,
-                renderWhitespace: 'selection',
-                smoothScrolling: true,
-                cursorBlinking: 'phase',
-                bracketPairColorization: { enabled: true },
-                suggest: { showKeywords: true },
-              }}
-            />
+            <Suspense
+              fallback={
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: 14 }}>
+                  Loading editor...
+                </div>
+              }
+            >
+              <CodeEditor
+                language={selectedLang?.monacoLanguage ?? 'plaintext'}
+                value={code}
+                onChange={handleCodeChange}
+              />
+            </Suspense>
           </div>
 
           {/* ── Output Panel ──────────────────────────────────────────────── */}

@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <>
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
@@ -28,5 +28,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         },
       }}
     />
-  </React.StrictMode>
+  </>
 );
