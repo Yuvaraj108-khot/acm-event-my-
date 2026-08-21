@@ -51,10 +51,25 @@ export default function MCQRoundPage() {
 
       const rData = roundRes.data;
       setRound(rData);
-      setTimeLeft(rData?.durationMinutes ? rData.durationMinutes * 60 : 0);
+
+      // Calculate remaining seconds based on when the user joined the round
+      let remainingSeconds = 0;
+      if (rData?.durationMinutes) {
+        const joinedAtStr = rData.userStatus?.joinedAt || rData.actualStartAt || rData.createdAt;
+        if (joinedAtStr) {
+          const startTimeMs = new Date(joinedAtStr).getTime();
+          const durationMs = rData.durationMinutes * 60 * 1000;
+          const elapsedMs = Date.now() - startTimeMs;
+          remainingSeconds = Math.max(0, Math.floor((durationMs - elapsedMs) / 1000));
+        } else {
+          remainingSeconds = rData.durationMinutes * 60;
+        }
+      }
+      setTimeLeft(remainingSeconds);
 
       // Check if already completed
-      if (rData?.userStatus?.status === 'completed' || resultRes?.data) {
+      const isAlreadyCompleted = rData?.userStatus?.status === 'completed' || resultRes?.data;
+      if (isAlreadyCompleted) {
         setSubmitted(true);
         if (resultRes?.data) {
           setScoreInfo({
@@ -65,6 +80,17 @@ export default function MCQRoundPage() {
         } else if (rData?.userStatus?.score) {
           setScoreInfo({ totalScore: parseFloat(rData.userStatus.score || '0') });
         }
+      } else if (remainingSeconds <= 0 && rData?.durationMinutes) {
+        // If time expired but not submitted yet, auto-submit immediately
+        setSubmitted(true);
+        mcqService.submitRound(roundId).then(result => {
+          setScoreInfo({
+            totalScore: result.totalScore,
+            questionsAttempted: result.questionsAttempted,
+            questionsCorrect: result.questionsCorrect,
+          });
+          toast('⏱ Time\'s up! Round auto-submitted.', { icon: '🕐' });
+        }).catch(() => {});
       }
     }).catch(err => {
       toast.error(getErrorMessage(err, 'Failed to load round details'));
@@ -158,8 +184,23 @@ export default function MCQRoundPage() {
   };
 
   const handleAutoSubmit = async () => {
+    setSubmitted(true);
+    if (!roundId) return;
     toast('⏰ Time\'s up! Auto-submitting...', { icon: '⏱' });
-    await handleSubmit();
+    try {
+      const result = await mcqService.submitRound(roundId);
+      setScoreInfo({
+        totalScore: result.totalScore,
+        questionsAttempted: result.questionsAttempted,
+        questionsCorrect: result.questionsCorrect,
+      });
+      authService.getMe().then(res => {
+        if (res.user && res.profile) {
+          useAuthStore.getState().setUser(res.user);
+          useAuthStore.getState().setProfile(res.profile);
+        }
+      }).catch(() => {});
+    } catch {}
   };
 
   if (loading) {

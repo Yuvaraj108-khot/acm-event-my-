@@ -159,10 +159,31 @@ export default function CodingRoundPage() {
 
       const rData = roundRes.data;
       setRound(rData);
-      setTimeLeft(rData?.durationMinutes ? rData.durationMinutes * 60 : 0);
 
-      if (rData?.userStatus?.status === 'completed' || resultRes?.data) {
+      // Calculate remaining seconds based on when the user joined the round
+      let remainingSeconds = 0;
+      if (rData?.durationMinutes) {
+        const joinedAtStr = rData.userStatus?.joinedAt || rData.actualStartAt || rData.createdAt;
+        if (joinedAtStr) {
+          const startTimeMs = new Date(joinedAtStr).getTime();
+          const durationMs = rData.durationMinutes * 60 * 1000;
+          const elapsedMs = Date.now() - startTimeMs;
+          remainingSeconds = Math.max(0, Math.floor((durationMs - elapsedMs) / 1000));
+        } else {
+          remainingSeconds = rData.durationMinutes * 60;
+        }
+      }
+      setTimeLeft(remainingSeconds);
+
+      const isAlreadyCompleted = rData?.userStatus?.status === 'completed' || resultRes?.data;
+      if (isAlreadyCompleted) {
         setSubmitted(true);
+      } else if (remainingSeconds <= 0 && rData?.durationMinutes) {
+        // If time expired but not submitted yet, auto-submit immediately
+        setSubmitted(true);
+        mcqService.submitRound(roundId).then(() => {
+          toast('⏱ Time\'s up! Round auto-submitted.', { icon: '🕐' });
+        }).catch(() => {});
       }
 
       if (probs.length > 0 && enabledLangs.length > 0) {
@@ -178,11 +199,10 @@ export default function CodingRoundPage() {
 
   // ── Countdown ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (timeLeft <= 0) return;
+    if (timeLeft <= 0 || submitted) return;
     const timer = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 1) {
-          clearInterval(timer);
           handleAutoFinish();
           return 0;
         }
@@ -190,13 +210,13 @@ export default function CodingRoundPage() {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [timeLeft > 0]);
+  }, [timeLeft, submitted]);
 
   const handleAutoFinish = async () => {
+    setSubmitted(true);
     if (!roundId) return;
     try {
       await mcqService.submitRound(roundId);
-      setSubmitted(true);
       toast('⏱ Time\'s up! Round auto-submitted.', { icon: '🕐' });
     } catch {}
   };
