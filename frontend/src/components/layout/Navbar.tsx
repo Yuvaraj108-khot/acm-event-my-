@@ -11,7 +11,6 @@ import logo from '@/assets/logo.png';
 const navLinks = [
   { label: 'Dashboard', href: ROUTES.DASHBOARD, icon: BarChart3 },
   { label: 'Competitions', href: ROUTES.COMPETITIONS, icon: Trophy },
-  { label: 'Leaderboard', href: ROUTES.LEADERBOARD, icon: BarChart3 },
   { label: 'Profile', href: ROUTES.PROFILE, icon: User },
 ];
 

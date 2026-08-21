@@ -353,14 +353,9 @@ export default function CodingRoundPage() {
           </div>
           <h2 style={{ color: '#f5f5f5', fontSize: 28, fontWeight: 700, margin: '0 0 8px' }}>Round Submitted! 🎉</h2>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: 15, margin: '0 0 32px', lineHeight: 1.6 }}>
-            Your solutions have been evaluated. Check the leaderboard to see your rank!
+            Your solutions have been submitted successfully.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {round?.competitionId && (
-              <Button onClick={() => navigate(`/leaderboard/${round.competitionId}`)} style={{ width: '100%' }}>
-                View Leaderboard 🏆
-              </Button>
-            )}
             <Button variant="secondary" onClick={() => navigate('/dashboard')} style={{ width: '100%' }}>
               Back to Dashboard
             </Button>

@@ -15,6 +15,7 @@ export default function CompetitionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const isAdmin = user?.role && ['admin', 'super_admin', 'moderator'].includes(user.role);
 
   const [competition, setCompetition] = useState<(Competition & { isRegistered: boolean }) | null>(null);
   const [rounds, setRounds] = useState<Round[]>([]);
@@ -229,9 +230,11 @@ export default function CompetitionDetailPage() {
                   <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--color-text-secondary)' }}>
                     Wait for active rounds to participate.
                   </p>
-                  <Button variant="secondary" style={{ width: '100%' }} onClick={() => navigate(`/leaderboard/${competition.id}`)}>
-                    View Leaderboard
-                  </Button>
+                  {isAdmin && (
+                    <Button variant="secondary" style={{ width: '100%' }} onClick={() => navigate(`/leaderboard/${competition.id}`)}>
+                      View Leaderboard
+                    </Button>
+                  )}
                 </div>
               ) : open ? (
                 <>
@@ -262,11 +265,13 @@ export default function CompetitionDetailPage() {
                 </>
               )}
 
-              <div style={{ borderTop: '1px solid #1e1e1e', marginTop: 20, paddingTop: 20 }}>
-                <Button variant="ghost" size="sm" style={{ width: '100%' }} onClick={() => navigate(`/leaderboard/${competition.id}`)}>
-                  View Leaderboard →
-                </Button>
-              </div>
+              {isAdmin && (
+                <div style={{ borderTop: '1px solid #1e1e1e', marginTop: 20, paddingTop: 20 }}>
+                  <Button variant="ghost" size="sm" style={{ width: '100%' }} onClick={() => navigate(`/leaderboard/${competition.id}`)}>
+                    View Leaderboard →
+                  </Button>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

@@ -192,7 +192,7 @@ function HowItWorksSection() {
     { icon: Trophy, title: 'Join Competitions', description: 'Browse active competitions and register. Each competition has multiple rounds of varying difficulty.' },
     { icon: Brain, title: 'Solve MCQ Challenges', description: 'Answer timed multiple-choice questions on algorithms, data structures, and CS fundamentals.' },
     { icon: Code2, title: 'Code Your Way Up', description: 'Submit solutions in C, C++, Java, Python, or JavaScript against hidden test cases.' },
-    { icon: BarChart3, title: 'Track Your Progress', description: 'Monitor your rank in real-time on the live leaderboard and advance to next rounds.' },
+    { icon: BarChart3, title: 'Track Your Progress', description: 'Monitor your scores in real-time on your dashboard and advance to next rounds.' },
     { icon: Star, title: 'Win Prizes', description: 'Top performers get recognized and win prizes at ACM NMAMIT events.' },
   ];
 
@@ -253,7 +253,7 @@ function FaqSection() {
     { q: 'What programming languages are supported?', a: 'Currently we support C, C++, Java, Python 3, and JavaScript (Node.js). More languages may be added in future competitions.' },
     { q: 'How are rounds structured?', a: 'Each competition has multiple rounds configured by admins. Rounds can be MCQ-based or coding-based in any sequence. You must advance through rounds to participate in later ones.' },
     { q: 'Is there negative marking in MCQ rounds?', a: 'Negative marking is configurable per round. Admins set whether negative marking applies and the deduction value. Check each round\'s details before attempting.' },
-    { q: 'How is the leaderboard calculated?', a: 'The leaderboard aggregates scores across all completed rounds. For MCQ rounds, score is based on correct answers (minus negative marking). For coding rounds, partial marks are awarded based on test cases passed.' },
+    { q: 'How are scores calculated?', a: 'Scores aggregate across all completed rounds. For MCQ rounds, score is based on correct answers (minus negative marking). For coding rounds, partial marks are awarded based on test cases passed.' },
     { q: 'When are results announced?', a: 'Results are published by admins after reviewing all submissions. Participants who advance to the next round are notified through the platform.' },
   ];
 
@@ -333,7 +333,7 @@ function Footer() {
           Association for Computing Machinery — NMAMIT Chapter, Nitte
         </p>
         <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginBottom: 32, flexWrap: 'wrap' }}>
-          {['Competitions', 'Leaderboard', 'Login'].map(label => (
+          {['Competitions', 'Login'].map(label => (
             <Link key={label} to={`/${label.toLowerCase()}`} style={{ color: 'var(--color-text-secondary)', fontSize: 14, textDecoration: 'none' }}>
               {label}
             </Link>

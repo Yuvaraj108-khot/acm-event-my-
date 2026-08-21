@@ -179,7 +179,6 @@ export default function ParticipantDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
                 { label: 'Browse Competitions', desc: 'Find and join competitions', icon: Trophy, href: ROUTES.COMPETITIONS, color: '#a855f7' },
-                { label: 'Leaderboard', desc: 'See global rankings', icon: BarChart3, href: ROUTES.LEADERBOARD, color: '#3b82f6' },
                 { label: 'My Profile', desc: 'View and edit your profile', icon: CheckCircle, href: ROUTES.PROFILE, color: '#22c55e' },
               ].map(({ label, desc, icon: Icon, href, color }) => (
                 <motion.div

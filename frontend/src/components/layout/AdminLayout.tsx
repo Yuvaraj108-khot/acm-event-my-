@@ -12,6 +12,7 @@ import logo from '@/assets/logo.png';
 const adminNavItems = [
   { label: 'Dashboard', href: ROUTES.ADMIN, icon: LayoutDashboard, exact: true },
   { label: 'Competitions', href: ROUTES.ADMIN_COMPETITIONS, icon: Trophy },
+  { label: 'Leaderboard', href: ROUTES.LEADERBOARD, icon: BarChart2 },
   { label: 'Participants', href: ROUTES.ADMIN_PARTICIPANTS, icon: Users },
   { label: 'Settings', href: ROUTES.ADMIN_SETTINGS, icon: Settings },
 ];

@@ -237,11 +237,6 @@ export default function MCQRoundPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {round?.competitionId && (
-              <Button onClick={() => navigate(`/leaderboard/${round.competitionId}`)} style={{ width: '100%' }}>
-                View Leaderboard 🏆
-              </Button>
-            )}
             <Button variant="secondary" onClick={() => navigate('/dashboard')} style={{ width: '100%' }}>
               Back to Dashboard
             </Button>

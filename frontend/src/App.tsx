@@ -79,8 +79,8 @@ function AppRoutes() {
         } />
         <Route path={ROUTES.COMPETITIONS} element={<><Navbar /><CompetitionsPage /></>} />
         <Route path="/competitions/:id" element={<><Navbar /><CompetitionDetailPage /></>} />
-        <Route path={ROUTES.LEADERBOARD} element={<><Navbar /><LeaderboardPage /></>} />
-        <Route path="/leaderboard/:competitionId" element={<><Navbar /><LeaderboardPage /></>} />
+        <Route path={ROUTES.LEADERBOARD} element={<AdminRoute><LeaderboardPage /></AdminRoute>} />
+        <Route path="/leaderboard/:competitionId" element={<AdminRoute><LeaderboardPage /></AdminRoute>} />
 
         {/* Auth-required */}
         <Route path={ROUTES.PROFILE_SETUP} element={

@@ -80,9 +80,8 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', paddingTop: 80 }}>
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px' }}>
-        {/* Header */}
+    <div style={{ padding: '40px 24px', maxWidth: 1000, margin: '0 auto' }}>
+      {/* Header */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 36 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
             <div style={{
@@ -213,6 +212,5 @@ export default function LeaderboardPage() {
           </motion.div>
         )}
       </div>
-    </div>
   );
 }
