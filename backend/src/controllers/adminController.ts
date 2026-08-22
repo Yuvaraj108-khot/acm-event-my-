@@ -103,3 +103,48 @@ export async function updateAdminRole(req: Request, res: Response) {
   const updatedDoc = await docRef.get();
   res.json(success(updatedDoc.data(), 'Admin role updated'));
 }
+
+export async function createAdmin(req: Request, res: Response) {
+  const { email, role } = req.body;
+
+  const allowedRoles = ['admin', 'moderator'];
+  if (!allowedRoles.includes(role)) {
+    res.status(400).json({ success: false, message: 'Invalid role' });
+    return;
+  }
+
+  if (!email) {
+    res.status(400).json({ success: false, message: 'Email is required' });
+    return;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Check if user already exists
+  const usersSnap = await db.collection('users')
+    .where('email', '==', normalizedEmail)
+    .limit(1)
+    .get();
+
+  if (!usersSnap.empty) {
+    res.status(400).json({ success: false, message: 'User with this email already exists' });
+    return;
+  }
+
+  const userRef = db.collection('users').doc();
+  const userId = userRef.id;
+
+  const userData = {
+    id: userId,
+    email: normalizedEmail,
+    role,
+    isActive: true,
+    profileCompleted: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  await userRef.set(userData);
+
+  res.status(201).json(success(userData, 'New administrator added successfully'));
+}

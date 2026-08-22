@@ -64,21 +64,6 @@ export default function AdminDashboard() {
         </h1>
       </motion.div>
 
-      {/* Metrics */}
-      {stats && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 40 }}
-        >
-          <MetricCard title="Competitions" value={stats.totalCompetitions} icon={<Trophy size={22} />} color="#a855f7" />
-          <MetricCard title="Total Rounds" value={stats.totalRounds} icon={<Activity size={22} />} color="#3b82f6" />
-          <MetricCard title="Total Registrations" value={stats.totalRegistrations} icon={<Users size={22} />} color="#22c55e" />
-          <MetricCard title="Total Participants" value={stats.totalParticipants} icon={<Users size={22} />} color="#f59e0b" />
-        </motion.div>
-      )}
-
       {/* Audit Logs */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}

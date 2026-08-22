@@ -97,19 +97,6 @@ export default function ParticipantDashboard() {
           )}
         </motion.div>
 
-        {/* Stats grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 40 }}
-        >
-          <StatCard label="Total Points" value={parseFloat(profile?.totalPoints ?? '0').toFixed(0)} icon={<Star size={20} />} color="#a855f7" />
-          <StatCard label="Competitions" value={competitions.filter(c => c.isRegistered).length} icon={<Trophy size={20} />} color="#3b82f6" />
-          <StatCard label="Rank" value={profile?.rank ? getRankSuffix(profile.rank) : '#1'} icon={<BarChart3 size={20} />} color="#22c55e" />
-          <StatCard label="Status" value="Active" icon={<Zap size={20} />} color="#f59e0b" />
-        </motion.div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* My Competitions */}
           <motion.div
