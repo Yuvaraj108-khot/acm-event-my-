@@ -17,6 +17,9 @@ import { adminRouter } from './routes/admin.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { globalRateLimiter } from './middleware/rateLimit.js';
 
+import swaggerUi from 'swagger-ui-express';
+import { openApiSpec } from './config/openapi.js';
+
 const app = express();
 
 // Trust reverse proxy (e.g. Nginx, Vercel, Docker gateway)
@@ -28,8 +31,21 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+    // In production, strictly enforce exact match with FRONTEND_URL
+    if (env.NODE_ENV === 'production') {
+      if (origin === env.FRONTEND_URL) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+      return;
+    }
+
+    // In development/test mode, allow localhost, vercel preview deployments, or configured FRONTEND_URL
     if (
-      !origin ||
       /^http:\/\/localhost:\d+$/.test(origin) ||
       /\.vercel\.app$/.test(origin) ||
       origin === env.FRONTEND_URL
@@ -56,9 +72,30 @@ if (env.NODE_ENV !== 'test') {
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 app.use('/api', globalRateLimiter);
 
-// ── Health check ──────────────────────────────────────────────────────────────
+// ── Health check & Readiness ──────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0' });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    environment: env.NODE_ENV,
+    sandbox: env.USE_DOCKER_SANDBOX,
+  });
+});
+
+app.get('/ready', (_req, res) => {
+  res.json({
+    ready: true,
+    dockerSandboxEnabled: env.USE_DOCKER_SANDBOX,
+    database: 'firestore',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ── API Documentation (Swagger) ───────────────────────────────────────────────
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
+app.get('/api/docs.json', (_req, res) => {
+  res.json(openApiSpec);
 });
 
 // ── API routes ────────────────────────────────────────────────────────────────

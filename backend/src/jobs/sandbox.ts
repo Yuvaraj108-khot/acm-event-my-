@@ -169,6 +169,8 @@ async function runTestCaseDocker(
       '--cpus=1.0',
       '--pids-limit=50',
       '--read-only',
+      '--cap-drop=ALL',
+      '--security-opt=no-new-privileges',
       '-v', `${hostDir}:/app:ro`,
       '-w', '/app',
       '--user', '1000:1000',
@@ -180,6 +182,7 @@ async function runTestCaseDocker(
     let stdout = '';
     let stderr = '';
     let timedOut = false;
+    const MAX_OUTPUT_BYTES = 64 * 1024; // 64 KB limit
 
     const child = spawn('docker', dockerArgs);
 
@@ -188,8 +191,12 @@ async function runTestCaseDocker(
       child.stdin.end();
     }
 
-    child.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
-    child.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+    child.stdout.on('data', (data: Buffer) => {
+      if (stdout.length < MAX_OUTPUT_BYTES) stdout += data.toString();
+    });
+    child.stderr.on('data', (data: Buffer) => {
+      if (stderr.length < MAX_OUTPUT_BYTES) stderr += data.toString();
+    });
 
     const timer = setTimeout(() => {
       timedOut = true;
@@ -274,6 +281,21 @@ export async function executeCode(params: {
   totalTests: number;
 }> {
   const { languageSlug, sourceCode, testCases, timeLimitMs, memoryLimitMb } = params;
+
+  if (env.NODE_ENV === 'production' && !env.USE_DOCKER_SANDBOX) {
+    throw new Error('SECURITY VIOLATION: USE_DOCKER_SANDBOX must be enabled in production environments. Refusing to run arbitrary untrusted code directly on host.');
+  }
+
+  const MAX_SOURCE_BYTES = 64 * 1024; // 64 KB limit
+  if (Buffer.byteLength(sourceCode, 'utf-8') > MAX_SOURCE_BYTES) {
+    return {
+      compilationError: 'Source code exceeds maximum allowed limit of 64KB.',
+      testResults: [],
+      overallStatus: 'compilation_error',
+      totalPassed: 0,
+      totalTests: testCases.length,
+    };
+  }
 
   const langConfig = LANGUAGES[languageSlug];
   if (!langConfig) {
