@@ -382,12 +382,7 @@ export async function getMe(userId: string) {
       profile.totalPoints = formattedPoints;
     }
 
-    const allProfilesSnap = await db.collection('profiles').get();
-    const profiles = allProfilesSnap.docs.map(d => d.data());
-    profiles.sort((a, b) => parseFloat(b.totalPoints || '0') - parseFloat(a.totalPoints || '0'));
-    const index = profiles.findIndex(p => p.userId === userId);
-    const rank = index !== -1 ? index + 1 : null;
-    profile = { ...profile, rank };
+    profile = { ...profile, rank: null };
   }
 
   return { user: userDoc.data()!, profile };

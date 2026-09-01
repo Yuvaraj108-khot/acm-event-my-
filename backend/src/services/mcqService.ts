@@ -1,7 +1,7 @@
 import { db } from '../config/db.js';
 import { calculateMcqScore } from '../utils/helpers.js';
 import type { CreateQuestionInput } from '../validators/mcq.js';
-import { getRound } from './roundService.js';
+import { getRound, getUserRoundStatus, isRoundTimeWindowActive } from './roundService.js';
 import { calculateRoundRanks, rebuildCompetitionLeaderboard } from './leaderboardService.js';
 
 export async function getQuestionsForRound(roundId: string, userId: string, isAdmin = false) {
@@ -122,10 +122,19 @@ export async function saveAnswer(params: {
 }) {
   const { roundId, userId, questionId, selectedOptionId, isMarkedForReview } = params;
 
-  // Verify round is active
+  // Verify round exists
   const round = await getRound(roundId);
-  if (!round || round.status !== 'active') {
-    throw Object.assign(new Error('Round is not active'), { statusCode: 400 });
+  if (!round) throw Object.assign(new Error('Round not found'), { statusCode: 404 });
+
+  // Verify participant enrollment in round
+  const enrollment = await getUserRoundStatus(roundId, userId);
+  if (!enrollment) {
+    throw Object.assign(new Error('User is not enrolled in this round'), { statusCode: 403 });
+  }
+
+  // Verify round time window is active
+  if (!isRoundTimeWindowActive(round)) {
+    throw Object.assign(new Error('Round time window is not active or has ended'), { statusCode: 400 });
   }
 
   // Get question to verify option
@@ -192,6 +201,18 @@ export async function saveAnswer(params: {
 
 export async function submitMcqRound(roundId: string, userId: string) {
   const round = await getRound(roundId);
+  if (!round) throw Object.assign(new Error('Round not found'), { statusCode: 404 });
+
+  // Verify participant enrollment in round
+  const enrollment = await getUserRoundStatus(roundId, userId);
+  if (!enrollment) {
+    throw Object.assign(new Error('User is not enrolled in this round'), { statusCode: 403 });
+  }
+
+  // Verify round time window is active
+  if (!isRoundTimeWindowActive(round)) {
+    throw Object.assign(new Error('Round time window is not active or has ended'), { statusCode: 400 });
+  }
 
   let totalScore = 0;
   let correct = 0;

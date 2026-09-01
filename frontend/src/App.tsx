@@ -67,6 +67,15 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function LeaderboardWrapper() {
+  const { user } = useAuthStore();
+  const isAdmin = user && ['admin', 'super_admin', 'moderator'].includes(user.role);
+  if (isAdmin) {
+    return <AdminLayout><LeaderboardPage /></AdminLayout>;
+  }
+  return <><Navbar /><LeaderboardPage /></>;
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 function AppRoutes() {
   return (
@@ -79,8 +88,8 @@ function AppRoutes() {
         } />
         <Route path={ROUTES.COMPETITIONS} element={<><Navbar /><CompetitionsPage /></>} />
         <Route path="/competitions/:id" element={<><Navbar /><CompetitionDetailPage /></>} />
-        <Route path={ROUTES.LEADERBOARD} element={<AdminRoute><LeaderboardPage /></AdminRoute>} />
-        <Route path="/leaderboard/:competitionId" element={<AdminRoute><LeaderboardPage /></AdminRoute>} />
+        <Route path={ROUTES.LEADERBOARD} element={<PrivateRoute><LeaderboardWrapper /></PrivateRoute>} />
+        <Route path="/leaderboard/:competitionId" element={<PrivateRoute><LeaderboardWrapper /></PrivateRoute>} />
 
         {/* Auth-required */}
         <Route path={ROUTES.PROFILE_SETUP} element={

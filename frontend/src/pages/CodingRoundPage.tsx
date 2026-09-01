@@ -273,12 +273,11 @@ export default function CodingRoundPage() {
     setOutputOpen(true);
     setResult(null);
     try {
-      const res = await codingService.submitCode({
+      const res = await codingService.runCode({
         problemId: selectedProblem.id,
         roundId,
         languageId: selectedLang.id,
         sourceCode: code,
-        isRunOnly: true,
       });
       setResult(res);
     } catch {
@@ -300,7 +299,6 @@ export default function CodingRoundPage() {
         roundId,
         languageId: selectedLang.id,
         sourceCode: code,
-        isRunOnly: false,
       });
       setResult(res);
       // Load submissions

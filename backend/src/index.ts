@@ -19,6 +19,9 @@ import { globalRateLimiter } from './middleware/rateLimit.js';
 
 const app = express();
 
+// Trust reverse proxy (e.g. Nginx, Vercel, Docker gateway)
+app.set('trust proxy', 1);
+
 // ── Security middleware ───────────────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -33,7 +36,7 @@ app.use(cors({
     ) {
       callback(null, true);
     } else {
-      callback(null, true); // Allow origin in production to prevent CORS blocks across preview URLs
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
@@ -78,24 +81,31 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // ── Start server ──────────────────────────────────────────────────────────────
-const server = app.listen(env.PORT, () => {
-  console.log(`\n🚀 ACM Competition Platform API`);
-  console.log(`   Environment : ${env.NODE_ENV}`);
-  console.log(`   Port        : ${env.PORT}`);
-  console.log(`   Database    : Firebase Firestore (${env.FIREBASE_PROJECT_ID})`);
-  if (env.OTP_DEV_MODE) {
-    console.log(`   OTP Mode    : DEVELOPMENT (OTPs printed to console)`);
-  }
-  console.log('');
-});
+let server: any;
+if (env.NODE_ENV !== 'test') {
+  server = app.listen(env.PORT, () => {
+    console.log(`\n🚀 ACM Competition Platform API`);
+    console.log(`   Environment : ${env.NODE_ENV}`);
+    console.log(`   Port        : ${env.PORT}`);
+    console.log(`   Database    : Firebase Firestore (${env.FIREBASE_PROJECT_ID})`);
+    if (env.OTP_DEV_MODE) {
+      console.log(`   OTP Mode    : DEVELOPMENT (OTPs printed to console)`);
+    }
+    console.log('');
+  });
+}
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
 const shutdown = (signal: string) => {
   console.log(`\n${signal} received — shutting down gracefully...`);
-  server.close(() => {
-    console.log('HTTP server closed.');
+  if (server) {
+    server.close(() => {
+      console.log('HTTP server closed.');
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 };
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));

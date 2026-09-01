@@ -157,24 +157,17 @@ export async function advanceParticipantsToNextRound(
       });
     }
 
-    const nextSnap = await db.collection('round_participants')
-      .where('roundId', '==', nextRoundId)
-      .where('userId', '==', userId)
-      .limit(1)
-      .get();
-
-    if (nextSnap.empty) {
-      const docRef = db.collection('round_participants').doc();
-      batch.set(docRef, {
-        id: docRef.id,
-        roundId: nextRoundId,
-        userId,
-        competitionId,
-        status: 'joined',
-        joinedAt: new Date(),
-        score: '0.00',
-      });
-    }
+    const docId = `${nextRoundId}_${userId}`;
+    const docRef = db.collection('round_participants').doc(docId);
+    batch.set(docRef, {
+      id: docId,
+      roundId: nextRoundId,
+      userId,
+      competitionId,
+      status: 'joined',
+      joinedAt: new Date(),
+      score: '0.00',
+    });
   }
   await batch.commit();
 }

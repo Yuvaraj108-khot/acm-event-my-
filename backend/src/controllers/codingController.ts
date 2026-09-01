@@ -7,9 +7,19 @@ export async function getLanguages(_req: Request, res: Response) {
   res.json(success(languages));
 }
 
+import { getUserRoundStatus } from '../services/roundService.js';
+
 export async function getProblems(req: Request, res: Response) {
   const { roundId } = req.query as { roundId: string };
   const isAdmin = ['admin', 'super_admin', 'moderator'].includes(req.user?.role ?? '');
+  
+  if (!isAdmin) {
+    const enrollment = await getUserRoundStatus(roundId, req.user!.userId);
+    if (!enrollment) {
+      throw Object.assign(new Error('User is not enrolled in this round'), { statusCode: 403 });
+    }
+  }
+
   const problems = await codingService.getProblemsForRound(roundId, isAdmin);
   res.json(success(problems));
 }
@@ -29,9 +39,14 @@ export async function deleteProblem(req: Request, res: Response) {
   res.json(success(null, 'Problem deleted'));
 }
 
+export async function runCode(req: Request, res: Response) {
+  const result = await codingService.runCode(req.body, req.user!.userId);
+  res.json(success(result, 'Code executed'));
+}
+
 export async function submitCode(req: Request, res: Response) {
   const result = await codingService.submitCode(req.body, req.user!.userId);
-  res.json(success(result, result.submission ? 'Code submitted' : 'Code executed'));
+  res.json(success(result, 'Code submitted'));
 }
 
 export async function getUserSubmissions(req: Request, res: Response) {

@@ -1,10 +1,19 @@
 import { Request, Response } from 'express';
 import * as mcqService from '../services/mcqService.js';
 import { success } from '../utils/helpers.js';
+import { getUserRoundStatus } from '../services/roundService.js';
 
 export async function getQuestions(req: Request, res: Response) {
   const { roundId } = req.query as { roundId: string };
   const isAdmin = ['admin', 'super_admin', 'moderator'].includes(req.user?.role ?? '');
+  
+  if (!isAdmin) {
+    const enrollment = await getUserRoundStatus(roundId, req.user!.userId);
+    if (!enrollment) {
+      throw Object.assign(new Error('User is not enrolled in this round'), { statusCode: 403 });
+    }
+  }
+
   const questions = await mcqService.getQuestionsForRound(roundId, req.user?.userId ?? '', isAdmin);
   res.json(success(questions));
 }

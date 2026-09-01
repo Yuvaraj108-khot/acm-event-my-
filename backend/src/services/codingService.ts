@@ -1,8 +1,9 @@
 import { db } from '../config/db.js';
 import { executeCode } from '../jobs/sandbox.js';
-import type { CreateProblemInput, SubmitCodeInput } from '../validators/coding.js';
+import type { CreateProblemInput, SubmitCodeInput, RunCodeInput } from '../validators/coding.js';
 import { slugify } from '../utils/helpers.js';
-import { getRound } from './roundService.js';
+import { getRound, getUserRoundStatus, isRoundTimeWindowActive } from './roundService.js';
+
 
 export async function getLanguages() {
   const snap = await db.collection('coding_languages')
@@ -106,14 +107,32 @@ export async function deleteProblem(id: string) {
   await db.collection('coding_problems').doc(id).delete();
 }
 
-export async function submitCode(data: SubmitCodeInput, userId: string) {
-  const { problemId, roundId, languageId, sourceCode, isRunOnly } = data;
+export async function runCode(data: RunCodeInput, userId: string) {
+  const { problemId, roundId, languageId, sourceCode } = data;
 
-  // Verify round is active
+  // Verify round exists
   const round = await getRound(roundId);
   if (!round) throw Object.assign(new Error('Round not found'), { statusCode: 404 });
-  if (!isRunOnly && round.status !== 'active') {
-    throw Object.assign(new Error('Round is not active'), { statusCode: 400 });
+
+  // Verify participant enrollment in round
+  const enrollment = await getUserRoundStatus(roundId, userId);
+  if (!enrollment) {
+    throw Object.assign(new Error('User is not enrolled in this round'), { statusCode: 403 });
+  }
+
+  // Verify round time window is active
+  if (!isRoundTimeWindowActive(round)) {
+    throw Object.assign(new Error('Round time window is not active or has ended'), { statusCode: 400 });
+  }
+
+  // Get problem
+  const probSnap = await db.collection('coding_problems').doc(problemId).get();
+  if (!probSnap.exists) throw Object.assign(new Error('Problem not found'), { statusCode: 404 });
+  const problem = probSnap.data()!;
+
+  // Verify problem belongs to this round
+  if (problem.roundId !== roundId) {
+    throw Object.assign(new Error('Problem does not belong to this round'), { statusCode: 400 });
   }
 
   // Get language
@@ -121,19 +140,66 @@ export async function submitCode(data: SubmitCodeInput, userId: string) {
   if (!langSnap.exists) throw Object.assign(new Error('Language not found'), { statusCode: 404 });
   const language = langSnap.data()!;
 
-  // Get problem
-  const probSnap = await db.collection('coding_problems').doc(problemId).get();
-  if (!probSnap.exists) throw Object.assign(new Error('Problem not found'), { statusCode: 404 });
-  const problem = probSnap.data()!;
-
   const allTestCases = problem.testCases || [];
-  const testCasesToRun = isRunOnly ? allTestCases.filter((tc: any) => tc.isSample) : allTestCases;
+  const testCasesToRun = allTestCases.filter((tc: any) => tc.isSample);
 
   // Execute code
   const result = await executeCode({
     languageSlug: language.slug,
     sourceCode,
     testCases: testCasesToRun.map((tc: any) => ({
+      id: tc.id,
+      input: tc.input,
+      expectedOutput: tc.expectedOutput,
+      isSample: tc.isSample,
+    })),
+    timeLimitMs: problem.timeLimitMs,
+    memoryLimitMb: problem.memoryLimitMb,
+  });
+
+  return { submission: null, result };
+}
+
+export async function submitCode(data: SubmitCodeInput, userId: string) {
+  const { problemId, roundId, languageId, sourceCode } = data;
+
+  // Verify round exists
+  const round = await getRound(roundId);
+  if (!round) throw Object.assign(new Error('Round not found'), { statusCode: 404 });
+
+  // Verify participant enrollment in round
+  const enrollment = await getUserRoundStatus(roundId, userId);
+  if (!enrollment) {
+    throw Object.assign(new Error('User is not enrolled in this round'), { statusCode: 403 });
+  }
+
+  // Verify round time window is active
+  if (!isRoundTimeWindowActive(round)) {
+    throw Object.assign(new Error('Round time window is not active or has ended'), { statusCode: 400 });
+  }
+
+  // Get problem
+  const probSnap = await db.collection('coding_problems').doc(problemId).get();
+  if (!probSnap.exists) throw Object.assign(new Error('Problem not found'), { statusCode: 404 });
+  const problem = probSnap.data()!;
+
+  // Verify problem belongs to this round
+  if (problem.roundId !== roundId) {
+    throw Object.assign(new Error('Problem does not belong to this round'), { statusCode: 400 });
+  }
+
+  // Get language
+  const langSnap = await db.collection('coding_languages').doc(languageId).get();
+  if (!langSnap.exists) throw Object.assign(new Error('Language not found'), { statusCode: 404 });
+  const language = langSnap.data()!;
+
+  const allTestCases = problem.testCases || [];
+
+  // Execute code
+  const result = await executeCode({
+    languageSlug: language.slug,
+    sourceCode,
+    testCases: allTestCases.map((tc: any) => ({
       id: tc.id,
       input: tc.input,
       expectedOutput: tc.expectedOutput,
@@ -151,35 +217,30 @@ export async function submitCode(data: SubmitCodeInput, userId: string) {
     ? Math.max(...result.testResults.map(r => r.executionTimeMs))
     : 0;
 
-  // Save submission (skip if run-only)
-  if (!isRunOnly) {
-    const subRef = db.collection('coding_submissions').doc();
-    const submission = {
-      id: subRef.id,
-      problemId,
-      roundId,
-      userId,
-      languageId,
-      sourceCode,
-      status: result.overallStatus,
-      score: String(score),
-      executionTimeMs,
-      testCasesPassed: result.totalPassed,
-      totalTestCases: result.totalTests,
-      errorMessage: result.compilationError || null,
-      testResults: result.testResults,
-      submittedAt: new Date(),
-      isRunOnly: false,
-    };
-    await subRef.set(submission);
+  const subRef = db.collection('coding_submissions').doc();
+  const submission = {
+    id: subRef.id,
+    problemId,
+    roundId,
+    userId,
+    languageId,
+    sourceCode,
+    status: result.overallStatus,
+    score: String(score),
+    executionTimeMs,
+    testCasesPassed: result.totalPassed,
+    totalTestCases: result.totalTests,
+    errorMessage: result.compilationError || null,
+    testResults: result.testResults,
+    submittedAt: new Date(),
+    isRunOnly: false,
+  };
+  await subRef.set(submission);
 
-    // Update round result (best score)
-    await updateRoundBestScore(roundId, userId, round.competitionId);
+  // Update round result (best score)
+  await updateRoundBestScore(roundId, userId, round.competitionId);
 
-    return { submission, result };
-  }
-
-  return { submission: null, result };
+  return { submission, result };
 }
 
 async function updateRoundBestScore(roundId: string, userId: string, competitionId: string) {

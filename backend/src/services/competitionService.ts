@@ -185,9 +185,10 @@ export async function registerForCompetition(competitionId: string, userId: stri
     }
   }
 
-  const regRef = db.collection('competition_registrations').doc();
+  const docId = `${competitionId}_${userId}`;
+  const regRef = db.collection('competition_registrations').doc(docId);
   const reg = {
-    id: regRef.id,
+    id: docId,
     competitionId,
     userId,
     status: 'registered',

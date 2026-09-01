@@ -17,25 +17,34 @@ export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+
+  // Debounce search input to prevent rapid api calls
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   useEffect(() => {
     setLoading(true);
     competitionService.list({
       status: filter === 'all' ? undefined : filter,
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       page,
       limit: 12,
     }).then(result => {
       setCompetitions(prev => page === 1 ? result.data : [...prev, ...result.data]);
       setHasMore(result.pagination.hasNextPage);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [filter, search, page]);
+  }, [filter, debouncedSearch, page]);
 
   // Reset page when filter/search changes
-  useEffect(() => { setPage(1); }, [filter, search]);
+  useEffect(() => { setPage(1); }, [filter, debouncedSearch]);
 
   const filters: { label: string; value: StatusFilter }[] = [
     { label: 'All', value: 'all' },

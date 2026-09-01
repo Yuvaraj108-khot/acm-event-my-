@@ -96,25 +96,7 @@ function HeroSection() {
           </Button>
         </motion.div>
 
-        {/* Stats row */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          style={{ display: 'flex', gap: 48, justifyContent: 'center', marginTop: 60, flexWrap: 'wrap' }}
-        >
-          {[
-            { value: '500+', label: 'Participants' },
-            { value: '20+', label: 'Competitions' },
-            { value: '100+', label: 'Problems' },
-            { value: '5', label: 'Languages' },
-          ].map(({ value, label }) => (
-            <div key={label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#a855f7', letterSpacing: '-0.5px' }}>{value}</div>
-              <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{label}</div>
-            </div>
-          ))}
-        </motion.div>
+        {/* Stats row removed */}
       </div>
 
       {/* Scroll indicator */}

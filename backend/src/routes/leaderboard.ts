@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import * as leaderboardController from '../controllers/leaderboardController.js';
-import { requireAdmin, optionalAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
 
 export const leaderboardRouter = Router();
 
-leaderboardRouter.get('/competition/:competitionId', requireAdmin, leaderboardController.getCompetitionLeaderboard);
-leaderboardRouter.get('/round/:roundId', requireAdmin, leaderboardController.getRoundLeaderboard);
+leaderboardRouter.get('/competition/:competitionId', requireAuth, leaderboardController.getCompetitionLeaderboard);
+leaderboardRouter.get('/round/:roundId', requireAuth, leaderboardController.getRoundLeaderboard);
 leaderboardRouter.post('/rebuild/:competitionId', requireAdmin, leaderboardController.rebuildLeaderboard);

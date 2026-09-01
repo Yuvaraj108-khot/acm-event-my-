@@ -25,13 +25,21 @@ export const createProblemSchema = z.object({
 
 export const updateProblemSchema = createProblemSchema.omit({ roundId: true }).partial();
 
+export const runCodeSchema = z.object({
+  problemId: z.string().min(1),
+  roundId: z.string().min(1),
+  languageId: z.string().min(1),
+  sourceCode: z.string().min(1).max(65536),
+});
+
 export const submitCodeSchema = z.object({
   problemId: z.string().min(1),
   roundId: z.string().min(1),
   languageId: z.string().min(1),
   sourceCode: z.string().min(1).max(65536),
-  isRunOnly: z.boolean().default(false),
 });
 
 export type CreateProblemInput = z.infer<typeof createProblemSchema>;
 export type SubmitCodeInput = z.infer<typeof submitCodeSchema>;
+export type RunCodeInput = z.infer<typeof runCodeSchema>;
+

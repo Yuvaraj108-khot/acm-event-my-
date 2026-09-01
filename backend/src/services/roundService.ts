@@ -124,25 +124,17 @@ export async function enrollParticipantsInRound(roundId: string, competitionId: 
   const batch = db.batch();
   for (const doc of registrationsSnap.docs) {
     const reg = doc.data();
-    // Check if already enrolled to ignore duplicates
-    const checkSnap = await db.collection('round_participants')
-      .where('roundId', '==', roundId)
-      .where('userId', '==', reg.userId)
-      .limit(1)
-      .get();
-    
-    if (checkSnap.empty) {
-      const pRef = db.collection('round_participants').doc();
-      batch.set(pRef, {
-        id: pRef.id,
-        roundId,
-        userId: reg.userId,
-        competitionId,
-        status: 'joined',
-        joinedAt: new Date(),
-        score: '0.00',
-      });
-    }
+    const docId = `${roundId}_${reg.userId}`;
+    const pRef = db.collection('round_participants').doc(docId);
+    batch.set(pRef, {
+      id: docId,
+      roundId,
+      userId: reg.userId,
+      competitionId,
+      status: 'joined',
+      joinedAt: new Date(),
+      score: '0.00',
+    });
   }
   await batch.commit();
 }
@@ -155,3 +147,22 @@ export async function getUserRoundStatus(roundId: string, userId: string) {
     .get();
   return snap.empty ? null : snap.docs[0].data();
 }
+
+export function isRoundTimeWindowActive(round: any): boolean {
+  if (round.status !== 'active') {
+    return false;
+  }
+  if (!round.actualStartAt) {
+    return false;
+  }
+  
+  const startTime = round.actualStartAt.toDate ? round.actualStartAt.toDate() : new Date(round.actualStartAt);
+  const durationMs = (Number(round.durationMinutes) || 60) * 60 * 1000;
+  const now = new Date();
+  
+  // 15-second grace period for latency
+  const gracePeriodMs = 15 * 1000;
+  
+  return now.getTime() <= startTime.getTime() + durationMs + gracePeriodMs;
+}
+

@@ -31,6 +31,7 @@ const envSchema = z.object({
   // Sandbox
   SANDBOX_TIMEOUT_MS: z.coerce.number().default(10000),
   SANDBOX_MEMORY_LIMIT_MB: z.coerce.number().default(256),
+  USE_DOCKER_SANDBOX: z.string().transform(v => v === 'true').default('true'),
 
   // Firebase
   FIREBASE_PROJECT_ID: z.string().default('acm-event'),

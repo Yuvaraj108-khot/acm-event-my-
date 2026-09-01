@@ -12,12 +12,21 @@ export const codingService = {
     return data.data;
   },
 
+  runCode: async (submission: {
+    problemId: string;
+    roundId: string;
+    languageId: string;
+    sourceCode: string;
+  }) => {
+    const { data } = await api.post<ApiResponse<SubmissionResult>>('/coding/run', submission);
+    return data.data;
+  },
+
   submitCode: async (submission: {
     problemId: string;
     roundId: string;
     languageId: string;
     sourceCode: string;
-    isRunOnly: boolean;
   }) => {
     const { data } = await api.post<ApiResponse<SubmissionResult>>('/coding/submit', submission);
     return data.data;
